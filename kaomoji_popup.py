@@ -287,7 +287,14 @@ class KaomojiStore:
                     "Kaomoji Popup",
                     f"Could not read {self.path.name}. Starting with default list.",
                 )
-        data = [dict(d) for d in DEFAULT_DATA_FILE]
+        # Load default kaomojis from default_kaomojis.json
+        data = []
+        if DEFAULT_DATA_FILE.exists():
+            try:
+                with open(DEFAULT_DATA_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                data = []
         self.items = data
         self.save()
         return data

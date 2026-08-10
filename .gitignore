@@ -12,3 +12,5 @@ dist/
 
 # Local User-Settings
 user_data/
+kaomoji_settings.json
+user_kaomojis.json
