@@ -6,7 +6,7 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
 
 ## 🚀 Features
 
-- **Global Hotkey:** Default `Ctrl+Alt+K` (or customizable via the menu / settings) to bring up the picker window system-wide.
+- **Global Hotkey:** Default `Ctrl+Shift+Space` (or customizable via the menu / settings) to bring up the picker window system-wide.
 - **Real-Time Filtering:** Live search across kaomoji characters, descriptions, and tags as you type.
 - **Automatic Insertion:** Sends the selected kaomoji directly into the previously active text field.
 - **Flexible Insertion Modes (`INSERT_MODE`):**
@@ -26,17 +26,17 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
 
 ## 🛠️ Usage & Shortcuts
 
-| Action | Shortcut / Interaction |
-| :--- | :--- |
-| **Open / Close Popup** | Global hotkey (Default: `Ctrl+Alt+K` / `Ctrl+Alt+Space`) |
+| Action | Shortcut / Interaction                                          |
+| :--- |:----------------------------------------------------------------|
+| **Open / Close Popup** | Global hotkey (Default: `Ctrl+Shift+Space`)                     |
 | **Search & Filter** | Type text into the search box or select a tag from the dropdown |
-| **Navigate List** | `Down Arrow` (`↓`) from the search box |
-| **Insert Entry** | `Enter` or `Double-click` on an entry |
-| **Edit Entry** | Select entry → `Edit` button |
-| **Delete Entry** | Select entry → `Delete` key or `Delete` button |
-| **Add New Entry** | `+ Add` button |
-| **Customize Hotkey** | `⚙ Hotkey` button |
-| **Close Window** | `Escape` (without inserting) |
+| **Navigate List** | `Down Arrow` (`↓`) from the search box                          |
+| **Insert Entry** | `Enter` or `Double-click` on an entry                           |
+| **Edit Entry** | Select entry → `Edit` button                                    |
+| **Delete Entry** | Select entry → `Delete` key or `Delete` button                  |
+| **Add New Entry** | `+ Add` button                                                  |
+| **Customize Hotkey** | `⚙ Hotkey` button                                               |
+| **Close Window** | `Escape` (without inserting)                                    |
 
 ---
 
@@ -77,7 +77,7 @@ python kaomoji_popup.py
    - Or manually by editing `kaomojis.json` (created automatically in the AppData/config folder on first launch).
 2. **Change Hotkey:**
    - Customize easily in the UI using the `⚙ Hotkey` button.
-   - Alternatively, change the default value of the `HOTKEY` variable in the script (e.g., `"<ctrl>+<shift>+k"`).
+   - Alternatively, change the default value of the `HOTKEY` variable in the script (e.g., `"<ctrl>+<shift>+<space>"`).
 3. **Change Insertion Behavior:**
    - Adjust the `INSERT_MODE` variable in the script (`"paste"`, `"type"`, or `"clipboard"`).
    - On slower systems, increase `INSERT_DELAY_MS` (e.g., to `250`) to ensure focus reliably returns to the previous window.

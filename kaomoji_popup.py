@@ -2,7 +2,7 @@
 """
 Kaomoji/ASCII-Art Popup Picker
 --------------------------------
-Global Hotkey (Default: Ctrl+Alt+Space) opens a small search window.
+Global Hotkey (Default: Ctrl+Shift+Space) opens a small search window.
 Typing filters live; pressing Enter or double-clicking automatically
 inserts the selection at the cursor position in the previously active window.
 
@@ -13,11 +13,12 @@ Run:
     python kaomoji_popup.py
 
 Create executable:
-    pyinstaller --onefile --noconsole kaomoji_popup.py
+    pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_popup.py
 """
 
 import json
 import queue
+import sys
 import threading
 import tkinter as tk
 from datetime import datetime
@@ -30,11 +31,17 @@ import webbrowser
 import pyperclip
 from pynput import keyboard
 
+def get_resource_path(relative_path: str) -> Path:
+    """Determines the path to resources, whether executed as .py or as packed.exe."""
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / relative_path
+    return Path(__file__).parent / relative_path
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-HOTKEY = "<ctrl>+<alt>+<space>"
+HOTKEY = "<ctrl>+<shift>+<space>"
 WINDOW_WIDTH = 560
 WINDOW_HEIGHT = 480
 
@@ -52,7 +59,7 @@ APPDATA_DIR.mkdir(parents=True, exist_ok=True) # Creates the folder if it does n
 USER_SETTINGS_FILE = APPDATA_DIR / "kaomoji_settings.json"
 USER_DATA_FILE = APPDATA_DIR / "kaomojis.json"
 
-DEFAULT_DATA_FILE = Path(__file__).resolve().parent / "default_kaomojis.json"
+DEFAULT_DATA_FILE = get_resource_path("default_kaomojis.json")
 
 KEY_CHOICES = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") + [f"f{i}" for i in range(1, 13)] + ["space"]
 
