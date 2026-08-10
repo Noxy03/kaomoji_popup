@@ -30,24 +30,31 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
 | :--- |:----------------------------------------------------------------|
 | **Open / Close Popup** | Global hotkey (Default: `Ctrl+Shift+Space`)                     |
 | **Search & Filter** | Type text into the search box or select a tag from the dropdown |
-| **Navigate List** | `Down Arrow` (`↓`) from the search box                          |
-| **Insert Entry** | `Enter` or `Double-click` on an entry                           |
+| **Navigate List** | `Up / Down Arrow` (`↑ / ↓`) from the search box                 |
+| **Insert Entry** | `Enter` or `Click` on an entry                                  |
 | **Edit Entry** | Select entry → `Edit` button                                    |
 | **Delete Entry** | Select entry → `Delete` key or `Delete` button                  |
 | **Add New Entry** | `+ Add` button                                                  |
 | **Customize Hotkey** | `⚙ Hotkey` button                                               |
-| **Close Window** | `Escape` (without inserting)                                    |
+| **Close Window** | `Escape` (without inserting) or press the hotkey again          |
 
 ---
 
 ## 💻 Installation
 
-### System Requirements
+### Option 1: Standalone Executable (Windows - Recommended)
 
+1. Download the latest `kaomoji_popup.exe` from the [Releases](https://github.com/Noxy03/kaomoji_popup/releases) page.
+2. Run the `.exe` file. No Python installation required!
+
+---
+
+### Option 2: Running from Source
+
+#### Requirements
 - Python 3.8 or newer
 
-### Install Python Packages
-
+#### Install Dependencies
 ```bash
 pip install pynput pyperclip
 ```
@@ -60,65 +67,28 @@ pip install pynput pyperclip
   - **Arch Linux / Manjaro:** `sudo pacman -S tk`
   - **Fedora:** `sudo dnf install python3-tkinter`
 
----
-
-## 🚀 Running & Configuration
-
 ### Start the Application
 
 ```bash
 python kaomoji_popup.py
 ```
 
-### Configuration & Customization
+### Building the Executable
+To build a single standalone .exe bundle with PyInstaller:
 
-1. **Add Custom Kaomojis:**
-   - Directly via the user interface using the `+ Add` button.
-   - Or manually by editing `kaomojis.json` (created automatically in the AppData/config folder on first launch).
-2. **Change Hotkey:**
-   - Customize easily in the UI using the `⚙ Hotkey` button.
-   - Alternatively, change the default value of the `HOTKEY` variable in the script (e.g., `"<ctrl>+<shift>+<space>"`).
-3. **Change Insertion Behavior:**
-   - Adjust the `INSERT_MODE` variable in the script (`"paste"`, `"type"`, or `"clipboard"`).
-   - On slower systems, increase `INSERT_DELAY_MS` (e.g., to `250`) to ensure focus reliably returns to the previous window.
+```bash
+pip install pyinstaller
+pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_popup.py
+```
 
 ---
 
 ## 🔄 Setting Up Autostart
 
-### Windows (Without Console Window)
+### Windows
 
 1. Press `Win + R`, type `shell:startup`, and press `Enter`.
-2. Create a new shortcut in this folder.
-3. Set the target to:
-   ```cmd
-   pythonw.exe "C:\Path\to\kaomoji_popup.py"
-   ```
-   *(Use `pythonw.exe` instead of `python.exe` to prevent a console window from remaining open in the background).*
-
-### Linux (systemd User Service)
-
-1. Create the file `~/.config/systemd/user/kaomoji-popup.service`:
-
-   ```ini
-   [Unit]
-   Description=Kaomoji Popup
-   After=graphical-session.target
-
-   [Service]
-   ExecStart=/usr/bin/python3 /path/to/kaomoji_popup.py
-   Restart=on-failure
-
-   [Install]
-   WantedBy=default.target
-   ```
-
-2. Enable and start the service immediately:
-
-   ```bash
-   systemctl --user daemon-reload
-   systemctl --user enable --now kaomoji-popup.service
-   ```
+2. Create a shortcut to `kaomoji_popup.exe` inside this folder.
 
 ---
 
@@ -127,7 +97,6 @@ python kaomoji_popup.py
 - **Wayland (Linux):** `pynput` relies on X11 APIs for global hotkeys and simulated key combinations (`Ctrl+V` / typing). Under a pure Wayland session (e.g., GNOME/KDE without XWayland fallback), functionality may be restricted for security reasons. A workaround can be implemented using compositor tools like `ydotool`.
 - **Password & Security Fields:** Some secure input fields or terminal emulators block clipboard pasting. In these cases, switching to `"type"` mode (`INSERT_MODE = "type"`) or pasting manually with `Ctrl+V` is recommended.
 - **Multi-Monitor Setups:** The popup opens at the current cursor/mouse position.
-- **Focus Delay:** The short delay (`INSERT_DELAY_MS`) ensures the operating system restores focus to the previous application window before key inputs are simulated.
 
 ---
 
