@@ -21,6 +21,7 @@ import queue
 import threading
 import tkinter as tk
 from datetime import datetime
+import os
 from pathlib import Path
 from tkinter import messagebox, ttk
 import urllib.request
@@ -45,45 +46,15 @@ RECENT_TAG_LABEL = "\u2b50 Recently Used"
 RECENT_LIMIT = 20
 RECENT_STAR_COUNT = 6
 
-DATA_FILE = Path(__file__).resolve().parent / "kaomojis.json"
-SETTINGS_FILE = Path(__file__).resolve().parent / "kaomoji_settings.json"
+# Determine the path to the user's AppData folder
+APPDATA_DIR = Path(os.getenv("APPDATA", Path.home())) / "KaomojiPopup"
+APPDATA_DIR.mkdir(parents=True, exist_ok=True) # Creates the folder if it does not exist
+USER_SETTINGS_FILE = APPDATA_DIR / "kaomoji_settings.json"
+USER_DATA_FILE = APPDATA_DIR / "kaomojis.json"
+
+DEFAULT_DATA_FILE = Path(__file__).resolve().parent / "default_kaomojis.json"
 
 KEY_CHOICES = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") + [f"f{i}" for i in range(1, 13)] + ["space"]
-
-DEFAULTS = [
-    {"kaomoji": "(・∀・)", "desc": "grin", "tags": ["joy"]},
-    {"kaomoji": "(๑˃̵ᴗ˂̵)و", "desc": "yeah", "tags": ["joy"]},
-    {"kaomoji": "ヽ(・∀・)ﾉ", "desc": "cheer", "tags": ["joy"]},
-    {"kaomoji": "(≧◡≦)", "desc": "beam", "tags": ["joy"]},
-    {"kaomoji": "＼(^o^)／", "desc": "hooray", "tags": ["joy"]},
-    {"kaomoji": "(*^▽^*)", "desc": "joyful", "tags": ["joy"]},
-    {"kaomoji": "(♡˙︶˙♡)", "desc": "in love", "tags": ["love"]},
-    {"kaomoji": "(◕‿◕)♡", "desc": "affectionate", "tags": ["love"]},
-    {"kaomoji": "(´∀｀)♡", "desc": "doting", "tags": ["love"]},
-    {"kaomoji": "♡(˃͈ દ ˂͈ ♡)", "desc": "cuddle", "tags": ["love"]},
-    {"kaomoji": "(*¯︶¯*)", "desc": "content love", "tags": ["love"]},
-    {"kaomoji": "(╥﹏╥)", "desc": "cry", "tags": ["sad"]},
-    {"kaomoji": "(´；ω；`)", "desc": "sad", "tags": ["sad"]},
-    {"kaomoji": "｡ﾟ(ﾟ´ω`ﾟ)ﾟ｡", "desc": "sob", "tags": ["sad"]},
-    {"kaomoji": "(っ˘̩╭╮˘̩)っ", "desc": "downcast", "tags": ["sad"]},
-    {"kaomoji": "(◞‸◟)", "desc": "disappointed", "tags": ["sad"]},
-    {"kaomoji": "(╯°□°)╯︵ ┻━┻", "desc": "table flip", "tags": ["anger"]},
-    {"kaomoji": "┬─┬ノ( º _ ºノ)", "desc": "table back", "tags": ["anger"]},
-    {"kaomoji": "(눈_눈)", "desc": "annoyed", "tags": ["anger"]},
-    {"kaomoji": "ヽ(`Д´)ﾉ", "desc": "angry", "tags": ["anger"]},
-    {"kaomoji": "(-`д´-)", "desc": "grumpy", "tags": ["anger"]},
-    {"kaomoji": "¯\\_(ツ)_/¯", "desc": "shrug", "tags": ["shrug"]},
-    {"kaomoji": "(・_・)", "desc": "thinking", "tags": ["shrug"]},
-    {"kaomoji": "(￣▽￣)", "desc": "doubtful", "tags": ["shrug"]},
-    {"kaomoji": "(⊙_⊙)", "desc": "surprised", "tags": ["shrug"]},
-    {"kaomoji": "(・・;)", "desc": "uncertain", "tags": ["shrug"]},
-    {"kaomoji": "(=^･ω･^=)", "desc": "cat", "tags": ["other"]},
-    {"kaomoji": "(ノಠ益ಠ)ノ彡┻━┻", "desc": "rage flip", "tags": ["other", "anger"]},
-    {"kaomoji": "(-_-)zzz", "desc": "sleeping", "tags": ["other"]},
-    {"kaomoji": "(ง'̀-'́)ง", "desc": "ready to fight", "tags": ["other"]},
-    {"kaomoji": "(づ｡◕‿‿◕｡)づ", "desc": "hug", "tags": ["other", "love"]},
-    {"kaomoji": "ლ(ಠ益ಠლ)", "desc": "frustrated", "tags": ["other", "anger"]},
-]
 
 COLORS = {
     "base": "#1e1e2e",
@@ -106,7 +77,7 @@ FONT_UI = ("Consolas", 11)
 FONT_KAOMOJI = ("Consolas", 11)
 
 CURRENT_VERSION = "1.0.0"
-GITHUB_REPO = "dein-username/dein-repo-name"
+GITHUB_REPO = "Noxy03/kaomoji_popup"
 
 
 def check_for_updates():
@@ -198,9 +169,9 @@ def center_window(win: tk.Toplevel, parent: tk.Misc = None):
 # ---------------------------------------------------------------------------
 
 def load_hotkey():
-    if SETTINGS_FILE.exists():
+    if USER_SETTINGS_FILE.exists():
         try:
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
+            with open(USER_SETTINGS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 hk = data.get("hotkey")
                 if hk:
@@ -211,7 +182,7 @@ def load_hotkey():
 
 
 def save_hotkey(hotkey_str: str):
-    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
+    with open(USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump({"hotkey": hotkey_str}, f, ensure_ascii=False, indent=2)
 
 
@@ -316,7 +287,7 @@ class KaomojiStore:
                     "Kaomoji Popup",
                     f"Could not read {self.path.name}. Starting with default list.",
                 )
-        data = [dict(d) for d in DEFAULTS]
+        data = [dict(d) for d in DEFAULT_DATA_FILE]
         self.items = data
         self.save()
         return data
@@ -819,7 +790,7 @@ def main():
 
     threading.Thread(target=check_for_updates, daemon=True).start()
 
-    store = KaomojiStore(DATA_FILE)
+    store = KaomojiStore(USER_DATA_FILE)
     trigger_queue: "queue.Queue[bool]" = queue.Queue()
 
     def on_hotkey():
@@ -841,7 +812,7 @@ def main():
 
     poll_queue()
     print(f"Kaomoji Popup is running in the background. Hotkey: {format_hotkey_display(hotkey_mgr.current)}")
-    print(f"Data file: {DATA_FILE}")
+    print(f"Data file: {USER_DATA_FILE}")
     print("To exit, close this terminal window or press Ctrl+C.")
     root.mainloop()
 

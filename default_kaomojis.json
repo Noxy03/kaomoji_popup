@@ -1,0 +1,55 @@
+[
+  {
+    "kaomoji": "＼(^o^)／",
+    "desc": "hooray",
+    "tags": ["joy"]},
+  {
+    "kaomoji": "(*^▽^*)",
+    "desc": "joyful",
+    "tags": ["joy"]},
+  {
+    "kaomoji": "♡(˃͈ દ ˂͈ ♡)",
+    "desc": "cuddle",
+    "tags": ["love"]},
+  {
+    "kaomoji": "(*¯︶¯*)",
+    "desc": "content love",
+    "tags": ["love"]},
+  {
+    "kaomoji": "(╥﹏╥)",
+    "desc": "cry",
+    "tags": ["sad"]},
+  {
+    "kaomoji": "(◞‸◟)",
+    "desc": "disappointed",
+    "tags": ["sad"]},
+  {
+    "kaomoji": "(╯°□°)╯︵ ┻━┻",
+    "desc": "table flip",
+    "tags": ["anger"]},
+  {
+    "kaomoji": "(눈_눈)",
+    "desc": "annoyed",
+    "tags": ["anger"]},
+  {
+    "kaomoji": "¯\\_(ツ)_/¯",
+    "desc": "shrug",
+    "tags": ["shrug"]},
+  {
+    "kaomoji": "(・_・)",
+    "desc": "thinking",
+    "tags": ["shrug"]},
+  {
+    "kaomoji": "(=^･ω･^=)",
+    "desc": "cat",
+    "tags": ["other"]},
+  {
+    "kaomoji": "(-_-)zzz",
+    "desc": "sleeping",
+    "tags": ["other"]},
+  {
+    "kaomoji": "(ง'̀-'́)ง",
+    "desc": "ready to fight",
+    "tags": ["other"]
+  }
+]

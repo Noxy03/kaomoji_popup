@@ -11,5 +11,4 @@ dist/
 *.spec
 
 # Local User-Settings
-kaomoji_settings.json
-kaomoji.json
+user_data/
