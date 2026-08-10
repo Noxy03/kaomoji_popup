@@ -1,0 +1,15 @@
+# Development- & IDE-Folders
+.idea/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# PyInstaller Build-Artefacts
+build/
+dist/
+*.spec
+
+# Local User-Settings
+kaomoji_settings.json
+kaomoji.json
