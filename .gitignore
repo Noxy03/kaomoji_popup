@@ -9,6 +9,7 @@ __pycache__/
 build/
 dist/
 *.spec
+*.exe
 
 # Local User-Settings
 user_data/
