@@ -131,3 +131,4 @@ Workflow when extending the list:
 - Change Pop-Up opening mode: open in the middle of the screen
 - Open on correct monitor
 - Option to close on background-click
+- Signature via Github-actions 

@@ -83,7 +83,7 @@ COLORS = {
 FONT_UI = ("Consolas", 11)
 FONT_KAOMOJI = ("Consolas", 11)
 
-CURRENT_VERSION = "1.0.0"
+CURRENT_VERSION = "1.0.1"
 GITHUB_REPO = "Noxy03/kaomoji_popup"
 
 
