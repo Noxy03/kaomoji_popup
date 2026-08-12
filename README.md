@@ -15,11 +15,14 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
   - `"clipboard"`: Copies the kaomoji to the clipboard for manual insertion.
 - **Built-in Management (UI & JSON):**
   - Add, edit, and delete kaomojis directly within the application.
+  - Duplicate protection: adding or renaming an entry to match an existing kaomoji is blocked.
   - Tag system for categorization (e.g., `joy`, `cat`, `anger`).
   - Stored in `kaomojis.json` inside the AppData/configuration directory (persists across restarts).
 - **Favorites & Recent Entries:**
   - Dropdown filter for `⭐ Recently Used` (sorted by most recent use).
-  - The most frequently/recently used kaomojis are highlighted with a `⭐` in the main view.
+  - The most frequently/recently used kaomojis are highlighted with a `⭐` in the main view and automatically float to the top of the full list — reordering is computed fresh every time the popup opens, so it's always up to date.
+- **Automatic Update Check:** On startup, the app checks GitHub Releases for a newer version and asks (via a dialog) whether to open the release page — it never opens anything without confirmation.
+- **New Default Kaomojis via Update:** When the developer adds new entries to the built-in kaomoji list, they're merged in automatically the next time you start the app — without duplicating kaomojis you already have and without bringing back ones you deliberately deleted.
 - **Modern Design:** Dark theme with an elegant **Catppuccin Mocha** color scheme.
 
 ---
@@ -36,7 +39,7 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
 | **Delete Entry** | Select entry → `Delete` key or `Delete` button                  |
 | **Add New Entry** | `+ Add` button                                                  |
 | **Customize Hotkey** | `⚙ Hotkey` button                                               |
-| **Close Window** | `Escape` (without inserting) or press the hotkey again          |
+| **Close Window** | `Escape`, the `×` button top-right, or press the hotkey again   |
 
 ---
 
@@ -92,6 +95,29 @@ pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_p
 
 ---
 
+## 🗃️ Data & Storage
+
+Your personal kaomoji list lives in `kaomojis.json` inside the app's AppData/config folder (path is printed to the console on startup). Each entry has a stable internal `id` — entries you create yourself are marked `"origin": "user"`, entries that came from the built-in list are marked `"origin": "default"`.
+
+You never need to touch this file by hand; it's shown here just so you know your customizations, deletions, and usage history are preserved safely across updates.
+
+---
+
+## 🔧 For Maintainers: Updating `default_kaomojis.json`
+
+When adding new entries to the bundled default kaomoji list, new entries are merged into every user's personal list on their next app start — **without** duplicating entries they already have and **without** un-deleting ones they removed on purpose. This works because every default entry carries a stable `id` that, once assigned, must never change or be reused.
+
+Workflow when extending the list:
+
+1. Add your new kaomojis to `default_kaomojis.json` as usual (no need to set an `id` by hand).
+2. Run the helper script to assign ids to the new entries only — existing ids are never touched:
+   ```bash
+   python assign_default_ids.py default_kaomojis.json
+   ```
+3. Review the diff, commit, and publish the release as usual.
+
+---
+
 ## ⚠️ Known Limitations & Notes
 
 - **Wayland (Linux):** `pynput` relies on X11 APIs for global hotkeys and simulated key combinations (`Ctrl+V` / typing). Under a pure Wayland session (e.g., GNOME/KDE without XWayland fallback), functionality may be restricted for security reasons. A workaround can be implemented using compositor tools like `ydotool`.
@@ -102,7 +128,6 @@ pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_p
 
 ## 🔜 Coming Soon
 
-- Close Button
 - Change Pop-Up opening mode: open in the middle of the screen
 - Open on correct monitor
 - Option to close on background-click

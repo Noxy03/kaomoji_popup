@@ -5,8 +5,8 @@
     "tags": [
       "shrug"
     ],
-    "last_used": "2026-08-10T16:19:18.960423",
-    "use_count": 4
+    "id": "d_678350513a",
+    "origin": "default"
   },
   {
     "kaomoji": "｡ﾟ(ﾟ´ω`ﾟ)ﾟ｡",
@@ -14,8 +14,8 @@
     "tags": [
       "sad"
     ],
-    "last_used": "2026-08-10T16:07:23.420887",
-    "use_count": 1
+    "id": "d_dd068faab8",
+    "origin": "default"
   },
   {
     "kaomoji": "(ノಠ益ಠ)ノ彡┻━┻",
@@ -24,8 +24,8 @@
       "other",
       "anger"
     ],
-    "last_used": "2026-08-10T16:07:18.625657",
-    "use_count": 1
+    "id": "d_57fd135963",
+    "origin": "default"
   },
   {
     "kaomoji": "(╯°□°)╯︵ ┻━┻",
@@ -33,8 +33,8 @@
     "tags": [
       "anger"
     ],
-    "last_used": "2026-08-10T16:07:12.843568",
-    "use_count": 1
+    "id": "d_002857046a",
+    "origin": "default"
   },
   {
     "kaomoji": "(づ｡◕‿‿◕｡)づ",
@@ -43,8 +43,8 @@
       "other",
       "love"
     ],
-    "last_used": "2026-08-10T16:07:07.790537",
-    "use_count": 1
+    "id": "d_97647f11c3",
+    "origin": "default"
   },
   {
     "kaomoji": "＼(^o^)／",
@@ -52,8 +52,8 @@
     "tags": [
       "joy"
     ],
-    "last_used": "2026-08-10T16:07:03.733149",
-    "use_count": 1
+    "id": "d_0b94ad44a2",
+    "origin": "default"
   },
   {
     "kaomoji": "(-`д´-)",
@@ -61,8 +61,8 @@
     "tags": [
       "anger"
     ],
-    "last_used": "2026-08-10T16:06:59.765232",
-    "use_count": 1
+    "id": "d_f6362e2d8f",
+    "origin": "default"
   },
   {
     "kaomoji": "(๑˃̵ᴗ˂̵)و",
@@ -70,8 +70,8 @@
     "tags": [
       "joy"
     ],
-    "last_used": "2026-08-10T16:06:55.309065",
-    "use_count": 3
+    "id": "d_775a8341c9",
+    "origin": "default"
   },
   {
     "kaomoji": "ヽ(`Д´)ﾉ",
@@ -79,8 +79,8 @@
     "tags": [
       "anger"
     ],
-    "last_used": "2026-08-10T16:05:46.198680",
-    "use_count": 1
+    "id": "d_f1b9da2a8d",
+    "origin": "default"
   },
   {
     "kaomoji": "T-T",
@@ -88,36 +88,44 @@
     "tags": [
       "cry"
     ],
-    "last_used": "2026-08-10T16:05:41.562309",
-    "use_count": 3
+    "id": "d_809cf7d25e",
+    "origin": "default"
   },
   {
     "kaomoji": "(눈_눈)",
     "desc": "annoyed",
     "tags": [
       "anger"
-    ]
+    ],
+    "id": "d_9402941e0b",
+    "origin": "default"
   },
   {
     "kaomoji": "┬─┬ノ( º _ ºノ)",
     "desc": "table back",
     "tags": [
       "anger"
-    ]
+    ],
+    "id": "d_9e1c3a960f",
+    "origin": "default"
   },
   {
     "kaomoji": "(≧◡≦)",
     "desc": "beam",
     "tags": [
       "joy"
-    ]
+    ],
+    "id": "d_6190743890",
+    "origin": "default"
   },
   {
     "kaomoji": "ヽ(・∀・)ﾉ",
     "desc": "cheer",
     "tags": [
       "joy"
-    ]
+    ],
+    "id": "d_516c9e94d2",
+    "origin": "default"
   },
   {
     "kaomoji": "(・∀・)",
@@ -125,57 +133,71 @@
     "tags": [
       "joy"
     ],
-    "last_used": "2026-08-10T15:51:55.422395",
-    "use_count": 1
+    "id": "d_71bb7b34f1",
+    "origin": "default"
   },
   {
     "kaomoji": "(*^▽^*)",
     "desc": "joyful",
     "tags": [
       "joy"
-    ]
+    ],
+    "id": "d_9c780c5b64",
+    "origin": "default"
   },
   {
     "kaomoji": "(◕‿◕)♡",
     "desc": "affectionate",
     "tags": [
       "love"
-    ]
+    ],
+    "id": "d_ad81c61a15",
+    "origin": "default"
   },
   {
     "kaomoji": "(*¯︶¯*)",
     "desc": "content love",
     "tags": [
       "love"
-    ]
+    ],
+    "id": "d_1797e68d4a",
+    "origin": "default"
   },
   {
     "kaomoji": "♡(˃͈ દ ˂͈ ♡)",
     "desc": "cuddle",
     "tags": [
       "love"
-    ]
+    ],
+    "id": "d_c6847a4beb",
+    "origin": "default"
   },
   {
     "kaomoji": "(´∀｀)♡",
     "desc": "doting",
     "tags": [
       "love"
-    ]
+    ],
+    "id": "d_969fa8b939",
+    "origin": "default"
   },
   {
     "kaomoji": "(♡˙︶˙♡)",
     "desc": "in love",
     "tags": [
       "love"
-    ]
+    ],
+    "id": "d_09108d3ef3",
+    "origin": "default"
   },
   {
     "kaomoji": "(=^･ω･^=)",
     "desc": "cat",
     "tags": [
       "other"
-    ]
+    ],
+    "id": "d_a4f76ef0d2",
+    "origin": "default"
   },
   {
     "kaomoji": "ლ(ಠ益ಠლ)",
@@ -183,76 +205,225 @@
     "tags": [
       "other",
       "anger"
-    ]
+    ],
+    "id": "d_9bfd8a85bf",
+    "origin": "default"
   },
   {
     "kaomoji": "(ง'̀-'́)ง",
     "desc": "ready to fight",
     "tags": [
       "other"
-    ]
+    ],
+    "id": "d_d75ef856cb",
+    "origin": "default"
   },
   {
     "kaomoji": "(-_-)zzz",
     "desc": "sleeping",
     "tags": [
       "other"
-    ]
+    ],
+    "id": "d_3d998371ab",
+    "origin": "default"
   },
   {
     "kaomoji": "(╥﹏╥)",
     "desc": "cry",
     "tags": [
       "sad"
-    ]
+    ],
+    "id": "d_6cce271ee1",
+    "origin": "default"
   },
   {
     "kaomoji": "(◞‸◟)",
     "desc": "disappointed",
     "tags": [
       "sad"
-    ]
+    ],
+    "id": "d_9898a132e4",
+    "origin": "default"
   },
   {
     "kaomoji": "(っ˘̩╭╮˘̩)っ",
     "desc": "downcast",
     "tags": [
       "sad"
-    ]
+    ],
+    "id": "d_a613360551",
+    "origin": "default"
   },
   {
     "kaomoji": "(´；ω；`)",
     "desc": "sad",
     "tags": [
       "sad"
-    ]
+    ],
+    "id": "d_2b2a8291be",
+    "origin": "default"
   },
   {
     "kaomoji": "(￣▽￣)",
     "desc": "doubtful",
     "tags": [
       "shrug"
-    ]
+    ],
+    "id": "d_e9eddb8c8d",
+    "origin": "default"
   },
   {
     "kaomoji": "(⊙_⊙)",
     "desc": "surprised",
     "tags": [
       "shrug"
-    ]
+    ],
+    "id": "d_926c0e344e",
+    "origin": "default"
   },
   {
     "kaomoji": "(・_・)",
     "desc": "thinking",
     "tags": [
       "shrug"
-    ]
+    ],
+    "id": "d_fb11fe589c",
+    "origin": "default"
   },
   {
     "kaomoji": "(・・;)",
     "desc": "uncertain",
     "tags": [
       "shrug"
-    ]
+    ],
+    "id": "d_7c71ef375c",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(ಠ_ಠ)",
+    "desc": "disapproval",
+    "tags": [
+      "anger"
+    ],
+    "id": "d_17ad91436d",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(¬_¬)",
+    "desc": "side eye",
+    "tags": [
+      "anger"
+    ],
+    "id": "d_f4b47c120e",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(✿◠‿◠)",
+    "desc": "blessed",
+    "tags": [
+      "joy"
+    ],
+    "id": "d_8969d08544",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(•̀ᴗ•́)و",
+    "desc": "determined",
+    "tags": [
+      "joy"
+    ],
+    "id": "d_a4c0648186",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(づ￣ ³￣)づ",
+    "desc": "blow kiss",
+    "tags": [
+      "love"
+    ],
+    "id": "d_4de2fb0f77",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(つ✧ω✧)つ",
+    "desc": "sparkle hug",
+    "tags": [
+      "love"
+    ],
+    "id": "d_54eb5a571e",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(°o°)",
+    "desc": "shocked",
+    "tags": [
+      "shrug"
+    ],
+    "id": "d_5d0bec0f17",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(⚆_⚆)",
+    "desc": "stare",
+    "tags": [
+      "shrug"
+    ],
+    "id": "d_d5fe7b32f4",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(>_<)",
+    "desc": "troubled",
+    "tags": [
+      "sad"
+    ],
+    "id": "d_e40617d1ee",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(;´༎ຶД༎ຶ`)",
+    "desc": "heavy cry",
+    "tags": [
+      "cry",
+      "sad"
+    ],
+    "id": "d_8f4d988cc6",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "( ͡° ͜ʖ ͡°)",
+    "desc": "lenny",
+    "tags": [
+      "other"
+    ],
+    "id": "d_26091c1348",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "ʕ•ᴥ•ʔ",
+    "desc": "bear",
+    "tags": [
+      "other"
+    ],
+    "id": "d_728687aa50",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(•_•) ( •_•)>⌐■-■ (⌐■_■)",
+    "desc": "deal with it",
+    "tags": [
+      "other"
+    ],
+    "id": "d_0d69d1ad32",
+    "origin": "default"
+  },
+  {
+    "kaomoji": "(x_x)",
+    "desc": "ko",
+    "tags": [
+      "other"
+    ],
+    "id": "d_06a27c5ce9",
+    "origin": "default"
   }
 ]

@@ -15,3 +15,7 @@ dist/
 user_data/
 kaomoji_settings.json
 user_kaomojis.json
+
+# DEV
+assign_default_ids.py
+DEV.md

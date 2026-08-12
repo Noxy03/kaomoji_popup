@@ -21,12 +21,12 @@ import queue
 import sys
 import threading
 import tkinter as tk
+import uuid
 from datetime import datetime
 import os
 from pathlib import Path
 from tkinter import messagebox, ttk
 import urllib.request
-import json
 import webbrowser
 import pyperclip
 from pynput import keyboard
@@ -87,19 +87,33 @@ CURRENT_VERSION = "1.0.0"
 GITHUB_REPO = "Noxy03/kaomoji_popup"
 
 
-def check_for_updates():
+def _version_tuple(v: str):
+    """Turns '1.10.2' into (1, 10, 2) so versions compare numerically,
+    not lexicographically ('1.10.0' > '1.9.0' is False as plain strings!)."""
+    parts = []
+    for p in v.split("."):
+        digits = "".join(c for c in p if c.isdigit())
+        parts.append(int(digits) if digits else 0)
+    return tuple(parts)
+
+
+def check_for_updates(result_queue: "queue.Queue[dict]"):
+    """Runs in a background thread - must NOT touch tkinter (messagebox) or
+    call webbrowser directly from here. It only does network I/O and hands
+    the result back to the main thread via result_queue, which the main
+    loop polls with root.after()."""
     url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "KaomojiApp"})
-        with urllib.request.urlopen(req, timeout=3) as response:
+        with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode())
             latest_version = data.get("tag_name", "").lstrip("v")
 
-            # Simple version comparison
-            if latest_version and latest_version > CURRENT_VERSION:
-                html_url = data.get("html_url")
-                # Optional: Ask tkinter.messagebox if to update
-                webbrowser.open(html_url)
+            if latest_version and _version_tuple(latest_version) > _version_tuple(CURRENT_VERSION):
+                result_queue.put({
+                    "version": latest_version,
+                    "url": data.get("html_url"),
+                })
     except Exception:
         pass # Offline or API limit exceeded
 
@@ -218,6 +232,8 @@ def build_hotkey(ctrl: bool, alt: bool, shift: bool, key: str) -> str:
     if shift:
         parts.append("<shift>")
     if key:
+        key = key.lower()  # pynput treats "K" and "k" as different key codes;
+                            # always normalize plain letters to lowercase.
         # F-keys and "space" must be enclosed in <...>
         if (key.startswith("f") and key[1:].isdigit()) or key == "space":
             parts.append(f"<{key}>")
@@ -279,72 +295,227 @@ def make_treeview(parent) -> ttk.Treeview:
 
 
 class KaomojiStore:
+    """
+    Data model per item:
+        {
+            "id": "d_xxxxxxxx" | "u_xxxxxxxx",  # stable, never reused/reassigned
+            "origin": "default" | "user",
+            "kaomoji": "...", "desc": "...", "tags": [...],
+            "last_used": iso-string | None, "use_count": int,
+        }
+
+    On-disk file (kaomojis.json):
+        {
+            "items": [ ...items... ],
+            "deleted_default_ids": ["d_xxxx", ...]   # tombstones
+        }
+
+    Sync rule with default_kaomojis.json (run once at startup):
+      - default id in deleted_default_ids       -> skip (user deleted it on purpose)
+      - default id already present in items     -> skip (already synced, don't
+                                                    touch it - preserves user
+                                                    edits / last_used / use_count)
+      - default kaomoji TEXT already present    -> skip (avoids visual dupes,
+                                                    e.g. user already created
+                                                    the exact same face)
+      - otherwise                               -> append as a brand-new item
+                                                    (last_used=None, so it
+                                                    doesn't affect "Recently Used")
+    """
+
     def __init__(self, path: Path):
         self.path = path
-        self.items = self._load()
+        self.items, self.deleted_default_ids = self._load()
+        self.sync_with_defaults()
         self.sort_items()
 
+    # -- loading / migration -------------------------------------------------
+
     def _load(self):
+        raw = None
         if self.path.exists():
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    raw = json.load(f)
             except (json.JSONDecodeError, OSError):
                 messagebox.showwarning(
                     "Kaomoji Popup",
                     f"Could not read {self.path.name}. Starting with default list.",
                 )
-        # Load default kaomojis from default_kaomojis.json
-        data = []
-        if DEFAULT_DATA_FILE.exists():
-            try:
-                with open(DEFAULT_DATA_FILE, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except (json.JSONDecodeError, OSError):
-                data = []
-        self.items = data
-        self.save()
+
+        if raw is None:
+            # Fresh install: seed straight from the bundled defaults.
+            items = self._load_default_items()
+            return items, []
+
+        if isinstance(raw, list):
+            # Legacy format (plain list, no ids/origin/tombstones yet) -> migrate.
+            items = self._migrate_legacy_items(raw)
+            return items, []
+
+        # Current format: {"items": [...], "deleted_default_ids": [...]}
+        items = raw.get("items", [])
+        deleted_ids = raw.get("deleted_default_ids", [])
+        # Defensive: fill in ids/origin for any item that somehow lacks them
+        # (e.g. manually edited JSON).
+        items = self._migrate_legacy_items(items)
+        return items, deleted_ids
+
+    def _migrate_legacy_items(self, items: list) -> list:
+        """Assigns id/origin to items that don't have them yet, matching
+        against the bundled defaults by kaomoji text where possible so
+        existing installs plug into the tombstone system correctly."""
+        default_by_text = {d["kaomoji"]: d for d in self._load_default_items()}
+        for item in items:
+            item.setdefault("last_used", None)
+            item.setdefault("use_count", 0)
+            if "id" in item and "origin" in item:
+                continue
+            match = default_by_text.get(item.get("kaomoji"))
+            if match is not None:
+                item["id"] = match["id"]
+                item["origin"] = "default"
+            else:
+                item["id"] = f"u_{uuid.uuid4().hex[:10]}"
+                item["origin"] = "user"
+        return items
+
+    def _load_default_items(self) -> list:
+        if not DEFAULT_DATA_FILE.exists():
+            return []
+        try:
+            with open(DEFAULT_DATA_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
+
+        # Defensive fallback: if an entry in default_kaomojis.json is missing
+        # an "id" (dev forgot to run the id-assignment step), derive a
+        # deterministic one from its text so sync still works within this
+        # release. Prefer running assign_default_ids.py instead - a
+        # text-derived id changes if the text is later edited/typo-fixed,
+        # which would make the tombstone system treat it as a "new" entry.
+        for entry in data:
+            entry.setdefault("tags", [])
+            entry.setdefault("desc", "")
+            if not entry.get("id"):
+                entry["id"] = "d_" + uuid.uuid5(uuid.NAMESPACE_URL, entry["kaomoji"]).hex[:10]
+            entry["origin"] = "default"
         return data
 
-    def sort_items(self, recent_limit=10):
-        """Places the X last used Kaomojis at the top and sorts the rest by day."""
-        # 1. Sort only Kaomojis with usage date in descending order
+    # -- sync ------------------------------------------------------------
+
+    def sync_with_defaults(self):
+        """Adds newly-released default kaomojis the user doesn't have yet,
+        without resurrecting ones they deleted or duplicating ones they
+        already have. Safe to call every startup."""
+        defaults = self._load_default_items()
+        existing_ids = {i["id"] for i in self.items}
+        existing_texts = {i["kaomoji"] for i in self.items}
+        deleted_ids = set(self.deleted_default_ids)
+
+        added = False
+        for d in defaults:
+            if d["id"] in deleted_ids:
+                continue
+            if d["id"] in existing_ids:
+                continue
+            if d["kaomoji"] in existing_texts:
+                continue
+            self.items.append({
+                "id": d["id"],
+                "origin": "default",
+                "kaomoji": d["kaomoji"],
+                "desc": d.get("desc", ""),
+                "tags": d.get("tags", []),
+                "last_used": None,
+                "use_count": 0,
+            })
+            existing_ids.add(d["id"])
+            existing_texts.add(d["kaomoji"])
+            added = True
+
+        if added:
+            self.save()
+
+    # -- sorting -----------------------------------------------------------
+
+    def _split_recent(self, recent_limit=10):
+        """Shared helper: returns (top_recent, remaining_sorted) without mutating self.items."""
         used_items = [i for i in self.items if i.get("last_used")]
         used_items.sort(key=lambda i: i["last_used"], reverse=True)
 
         top_recent = used_items[:recent_limit]
-        recent_set = {i["kaomoji"] for i in top_recent}
+        recent_ids = {i["id"] for i in top_recent}
 
-        # 2. Filter remaining Kaomojis and sort by day + description
-        remaining = [i for i in self.items if i["kaomoji"] not in recent_set]
+        remaining = [i for i in self.items if i["id"] not in recent_ids]
         remaining.sort(
             key=lambda i: (
                 i.get("tags", [""])[0].lower() if i.get("tags") else "zzz",
                 i.get("desc", "").lower()
             )
         )
+        return top_recent, remaining
 
-        # 3. Merge both lists
+    def sort_items(self, recent_limit=10):
+        """Places the X last used Kaomojis at the top and sorts the rest by day.
+        Mutates self.items (used once at load time)."""
+        top_recent, remaining = self._split_recent(recent_limit)
         self.items = top_recent + remaining
 
+    def ordered_items(self, recent_limit=10):
+        """Non-mutating version of sort_items(): computes a fresh recent-first
+        ordering on demand (e.g. every time the popup is opened) without
+        touching self.items or the on-disk order. This is what fixes the
+        'stale order until restart' issue - call this instead of self.items
+        whenever you display the full list."""
+        top_recent, remaining = self._split_recent(recent_limit)
+        return top_recent + remaining
+
+    # -- persistence ---------------------------------------------------------
+
     def save(self):
+        payload = {
+            "items": self.items,
+            "deleted_default_ids": self.deleted_default_ids,
+        }
         with open(self.path, "w", encoding="utf-8") as f:
-            json.dump(self.items, f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    # -- CRUD ------------------------------------------------------------
+
+    def exists(self, kaomoji: str, exclude_id: str = None) -> bool:
+        """Case-sensitive exact-text duplicate check, used before add/edit."""
+        return any(
+            i["kaomoji"] == kaomoji and i["id"] != exclude_id
+            for i in self.items
+        )
 
     def add(self, kaomoji: str, desc: str, tags: list):
+        if self.exists(kaomoji):
+            raise ValueError(f'"{kaomoji}" already exists.')
         self.items.append({
+            "id": f"u_{uuid.uuid4().hex[:10]}",
+            "origin": "user",
             "kaomoji": kaomoji, "desc": desc, "tags": tags,
             "last_used": None, "use_count": 0,
         })
         self.save()
 
-    def delete(self, kaomoji: str):
-        self.items = [i for i in self.items if i["kaomoji"] != kaomoji]
+    def delete(self, item_id: str):
+        item = next((i for i in self.items if i["id"] == item_id), None)
+        if item is None:
+            return
+        self.items = [i for i in self.items if i["id"] != item_id]
+        if item.get("origin") == "default":
+            # Tombstone it so a future default_kaomojis.json sync won't
+            # bring it back.
+            self.deleted_default_ids.append(item_id)
         self.save()
 
-    def mark_used(self, kaomoji: str):
+    def mark_used(self, item_id: str):
         for item in self.items:
-            if item["kaomoji"] == kaomoji:
+            if item["id"] == item_id:
                 item["last_used"] = datetime.now().isoformat()
                 item["use_count"] = item.get("use_count", 0) + 1
                 self.save()
@@ -411,6 +582,15 @@ class EntryDialog:
             return
         desc = self.desc_var.get().strip()
         tags = [t.strip().lower() for t in self.tags_var.get().split(",") if t.strip()]
+
+        exclude_id = self.existing_item["id"] if self.existing_item is not None else None
+        if self.store.exists(kao, exclude_id=exclude_id):
+            messagebox.showerror(
+                "Kaomoji Popup",
+                f'"{kao}" already exists in the list.',
+                parent=self.win,
+            )
+            return
 
         if self.existing_item is not None:
             self.existing_item["kaomoji"] = kao
@@ -497,7 +677,14 @@ class SettingsDialog:
         key_frame = ttk.Frame(frame)
         key_frame.pack(fill="x", pady=(4, 10))
         ttk.Label(key_frame, text="Key:").pack(side="left")
-        self.key_var = tk.StringVar(value=key0 if key0 in KEY_CHOICES else "k")
+        # KEY_CHOICES holds letters uppercase ("K") but "space"/"f1".."f12"
+        # lowercase, while key0 from parse_hotkey() is always lowercase -
+        # normalize per-kind so the current key is correctly preselected.
+        if key0 in ("space",) or (key0.startswith("f") and key0[1:].isdigit()):
+            key0_norm = key0
+        else:
+            key0_norm = key0.upper()
+        self.key_var = tk.StringVar(value=key0_norm if key0_norm in KEY_CHOICES else "K")
         key_combo = ttk.Combobox(key_frame, textvariable=self.key_var, values=KEY_CHOICES,
                                   state="readonly", width=6)
         key_combo.pack(side="left", padx=(8, 0))
@@ -593,6 +780,19 @@ class KaomojiPopup:
         )
         title_lbl.pack(side="left", padx=6, pady=4)
 
+        close_btn = tk.Label(
+            header,
+            text="×",
+            bg=COLORS["mantle"],
+            fg=COLORS["subtext0"],
+            font=("Consolas", 12),
+            cursor="arrow",
+        )
+        close_btn.pack(side="right", padx=(0, 8), pady=2)
+        close_btn.bind("<Button-1>", lambda e: self._close())
+        close_btn.bind("<Enter>", lambda e: close_btn.configure(fg=COLORS["red"]))
+        close_btn.bind("<Leave>", lambda e: close_btn.configure(fg=COLORS["subtext0"]))
+
         # Dragging-Logic
         self._drag_start_x = 0
         self._drag_start_y = 0
@@ -672,20 +872,24 @@ class KaomojiPopup:
         if tag_filter == RECENT_TAG_LABEL:
             candidates = self.store.recent_items()
         else:
-            candidates = self.store.items
+            candidates = self.store.ordered_items()
 
-        recent_star = {i["kaomoji"] for i in self.store.recent_items(RECENT_STAR_COUNT)}
+        recent_star = {i["id"] for i in self.store.recent_items(RECENT_STAR_COUNT)}
 
-        for idx, item in enumerate(candidates):
+        for item in candidates:
             if tag_filter not in ("All", RECENT_TAG_LABEL) and tag_filter not in item.get("tags", []):
                 continue
             hay = f'{item["kaomoji"]} {item["desc"]} {" ".join(item.get("tags", []))}'.lower()
             if q and q not in hay:
                 continue
 
+            # iid must match the index this item will have in _visible_items,
+            # NOT its position in the unfiltered "candidates" list - otherwise
+            # selecting a row after filtering picks the wrong item.
+            vis_idx = len(self._visible_items)
             self._visible_items.append(item)
 
-            is_starred = item["kaomoji"] in recent_star and tag_filter != RECENT_TAG_LABEL
+            is_starred = item["id"] in recent_star and tag_filter != RECENT_TAG_LABEL
             star_prefix = "⭐ " if is_starred else ""
 
             kaomoji_val = f"{star_prefix}{item['kaomoji']}"
@@ -693,7 +897,7 @@ class KaomojiPopup:
             tag_val = f"[{', '.join(item.get('tags', []))}]" if item.get("tags") else ""
 
             # The Treeview inserts values directly as separate column entries
-            self.tree.insert("", "end", iid=str(idx), values=(kaomoji_val, desc_val, tag_val))
+            self.tree.insert("", "end", iid=str(vis_idx), values=(kaomoji_val, desc_val, tag_val))
 
         children = self.tree.get_children()
         if children:
@@ -709,13 +913,13 @@ class KaomojiPopup:
 
     def _select_first(self):
         if self._visible_items:
-            self._insert(self._visible_items[0]["kaomoji"])
+            self._insert(self._visible_items[0])
 
     def _select_current(self):
         sel = self.tree.selection()
         if sel:
             idx = int(sel[0])
-            self._insert(self._visible_items[idx]["kaomoji"])
+            self._insert(self._visible_items[idx])
 
     def _open_add_dialog(self):
         EntryDialog(self.win, self.store, on_done=self._after_data_change)
@@ -736,7 +940,7 @@ class KaomojiPopup:
         item = self._visible_items[idx]
 
         def do_delete():
-            self.store.delete(item["kaomoji"])
+            self.store.delete(item["id"])
             self._after_data_change()
 
         ConfirmDialog(
@@ -757,8 +961,9 @@ class KaomojiPopup:
         self._update_tag_choices()
         self._refresh()
 
-    def _insert(self, kaomoji: str):
-        self.store.mark_used(kaomoji)
+    def _insert(self, item: dict):
+        kaomoji = item["kaomoji"]
+        self.store.mark_used(item["id"])
         self._close()
 
         if INSERT_MODE == "clipboard":
@@ -802,7 +1007,8 @@ def main():
     root.withdraw()
     apply_theme(root)
 
-    threading.Thread(target=check_for_updates, daemon=True).start()
+    update_queue: "queue.Queue[dict]" = queue.Queue()
+    threading.Thread(target=check_for_updates, args=(update_queue,), daemon=True).start()
 
     store = KaomojiStore(USER_DATA_FILE)
     trigger_queue: "queue.Queue[bool]" = queue.Queue()
@@ -822,6 +1028,21 @@ def main():
                 popup.show()
         except queue.Empty:
             pass
+
+        try:
+            info = update_queue.get_nowait()
+        except queue.Empty:
+            pass
+        else:
+            # Safe here: we're on the main thread (called via root.after),
+            # unlike inside check_for_updates() which runs in a background thread.
+            if messagebox.askyesno(
+                "Kaomoji Popup",
+                f"A new version ({info['version']}) is available "
+                f"(you have {CURRENT_VERSION}). Open the release page?",
+            ):
+                webbrowser.open(info["url"])
+
         root.after(50, poll_queue)
 
     poll_queue()
