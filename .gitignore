@@ -19,3 +19,4 @@ user_kaomojis.json
 # DEV
 assign_default_ids.py
 DEV.md
+requirements-dev.txt
