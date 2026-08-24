@@ -17,6 +17,7 @@ Create executable:
 """
 
 import json
+import logging
 import queue
 import sys
 import threading
@@ -53,11 +54,32 @@ RECENT_TAG_LABEL = "\u2b50 Recently Used"
 RECENT_LIMIT = 20
 RECENT_STAR_COUNT = 6
 
+# Determine the path to the user's per-OS config/data folder.
+def get_appdata_dir() -> Path:
+    if sys.platform == "win32":
+        base = os.getenv("APPDATA", str(Path.home()))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+    return Path(base) / "KaomojiPopup"
+
 # Determine the path to the user's AppData folder
-APPDATA_DIR = Path(os.getenv("APPDATA", Path.home())) / "KaomojiPopup"
+APPDATA_DIR = get_appdata_dir()
 APPDATA_DIR.mkdir(parents=True, exist_ok=True) # Creates the folder if it does not exist
 USER_SETTINGS_FILE = APPDATA_DIR / "kaomoji_settings.json"
 USER_DATA_FILE = APPDATA_DIR / "kaomojis.json"
+
+# Logging: the packaged .exe is built with --noconsole, so a normal print()
+# is invisible to most users. Log to a small file in APPDATA_DIR instead,
+# mainly so background-thread failures (e.g. check_for_updates) are
+# inspectable after the fact instead of silently vanishing.
+logging.basicConfig(
+    filename=APPDATA_DIR / "kaomoji_popup.log",
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(threadName)s] %(message)s",
+)
+logger = logging.getLogger("kaomoji_popup")
 
 DEFAULT_DATA_FILE = get_resource_path("default_kaomojis.json")
 
@@ -114,8 +136,15 @@ def check_for_updates(result_queue: "queue.Queue[dict]"):
                     "version": latest_version,
                     "url": data.get("html_url"),
                 })
+    except (urllib.error.URLError, TimeoutError) as e:
+        # Expected when offline or the API is briefly unreachable - not worth
+        # more than a debug note.
+        logger.debug("Update check skipped (network issue): %s", e)
     except Exception:
-        pass # Offline or API limit exceeded
+        # Anything else (e.g. GitHub changed its JSON schema, unexpected
+        # KeyError) is a real bug, not just "offline" - keep it out of the
+        # user's face but still capture it for diagnosis.
+        logger.warning("Update check failed unexpectedly", exc_info=True)
 
 def apply_theme(root: tk.Tk):
     style = ttk.Style(root)
@@ -266,10 +295,10 @@ class HotkeyManager:
         self.current = None
 
     def start(self, hotkey_str: str):
+        self.stop()
         new_listener = keyboard.GlobalHotKeys({hotkey_str: self.on_trigger})
         new_listener.daemon = True
         new_listener.start()
-        self.stop()
         self.listener = new_listener
         self.current = hotkey_str
 
@@ -364,7 +393,7 @@ class KaomojiStore:
     def _migrate_legacy_items(self, items: list) -> list:
         """Assigns id/origin to items that don't have them yet, matching
         against the bundled defaults by kaomoji text where possible so
-        existing installs plug into the tombstone system correctly."""
+        existing installations plug into the tombstone system correctly."""
         default_by_text = {d["kaomoji"]: d for d in self._load_default_items()}
         for item in items:
             item.setdefault("last_used", None)
@@ -677,7 +706,7 @@ class SettingsDialog:
         key_frame = ttk.Frame(frame)
         key_frame.pack(fill="x", pady=(4, 10))
         ttk.Label(key_frame, text="Key:").pack(side="left")
-        # KEY_CHOICES holds letters uppercase ("K") but "space"/"f1".."f12"
+        # KEY_CHOICES holds letters uppercase ("K") but "space"/"f1"..."f12"
         # lowercase, while key0 from parse_hotkey() is always lowercase -
         # normalize per-kind so the current key is correctly preselected.
         if key0 in ("space",) or (key0.startswith("f") and key0[1:].isdigit()):
