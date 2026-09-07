@@ -132,3 +132,4 @@ Workflow when extending the list:
 - Open on correct monitor
 - Option to close on background-click
 - Signature via Github-actions 
+- Linux Test
