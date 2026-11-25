@@ -42,13 +42,13 @@ def _get_default_data_file() -> Path:
     return Path(__file__).parent / "resources" / "default_kaomojis.json"
 
 # Linux configuration directory: ~/.config/kaomoji_popup/
-CONFIG_DIR = Path.home() / ".config" / APP_NAME
+CONFIG_DIR = _get_config_dir()
 
 USER_DATA_FILE = CONFIG_DIR / "kaomojis.json"
 USER_SETTINGS_FILE = CONFIG_DIR / "settings.json"
 
 # Bundled default data
-DEFAULT_DATA_FILE = Path(__file__).parent / "resources" / "default_kaomojis.json"
+DEFAULT_DATA_FILE = _get_default_data_file()
 
 # ---------------------------------------------------------------------------
 # Recent entries
