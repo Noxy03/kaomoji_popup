@@ -12,7 +12,7 @@ from pathlib import Path
 # Application
 # ---------------------------------------------------------------------------
 
-CURRENT_VERSION = "1.0.2"
+CURRENT_VERSION = "1.0.3"
 GITHUB_REPO = "Noxy03/kaomoji_popup"
 
 # ---------------------------------------------------------------------------
