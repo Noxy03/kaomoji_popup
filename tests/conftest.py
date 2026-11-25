@@ -68,8 +68,6 @@ def _isolated_appdata(tmp_path_factory):
 
 @pytest.fixture(scope="session")
 def kp(_isolated_appdata):
-    """Imports kaomoji_popup once per test session with GUI/OS-integration
-    modules stubbed out, and returns the module object."""
     tk = _stub_module("tkinter")
     _stub_module("tkinter.ttk")
     messagebox = _stub_module("tkinter.messagebox")
@@ -82,9 +80,23 @@ def kp(_isolated_appdata):
 
     _stub_module("pyperclip")
 
-    import kaomoji_popup  # noqa: E402  (import after stubbing, by design)
+    import kaomoji_popup.config as config
+    from kaomoji_popup.store import KaomojiStore
+    from kaomoji_popup.hotkey import (
+        build_hotkey,
+        parse_hotkey,
+        format_hotkey_display,
+    )
+    from kaomoji_popup.updater import _version_tuple
 
-    return kaomoji_popup
+    return types.SimpleNamespace(
+        config=config,
+        KaomojiStore=KaomojiStore,
+        build_hotkey=build_hotkey,
+        parse_hotkey=parse_hotkey,
+        format_hotkey_display=format_hotkey_display,
+        _version_tuple=_version_tuple,
+    )
 
 
 @pytest.fixture()
@@ -103,13 +115,14 @@ def make_default_file(tmp_path):
 
 @pytest.fixture()
 def store_factory(kp, tmp_path, make_default_file, monkeypatch):
-    """Factory fixture: build_store(defaults=[...], user_data=None) creates
-    a KaomojiStore against a fresh temp user-data file, with
-    kp.DEFAULT_DATA_FILE pointed at a controlled fixture list for the
-    duration of the test."""
 
     def _factory(defaults=None, user_data_path=None):
-        monkeypatch.setattr(kp, "DEFAULT_DATA_FILE", make_default_file(defaults or []))
+        monkeypatch.setattr(
+            kp.config,
+            "DEFAULT_DATA_FILE",
+            make_default_file(defaults or [])
+        )
+
         path = user_data_path or (tmp_path / "kaomojis.json")
         return kp.KaomojiStore(path)
 

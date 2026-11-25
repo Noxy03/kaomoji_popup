@@ -10,6 +10,9 @@ import queue
 import threading
 import tkinter as tk
 import webbrowser
+import os
+import socket
+import sys
 from tkinter import messagebox
 
 from . import config
@@ -18,6 +21,7 @@ from .store import KaomojiStore
 from .ui.popup import KaomojiPopup
 from .ui.theme import apply_theme
 from .updater import check_for_updates
+from .ipc import start_trigger_listener, wants_show_on_start
 
 
 def main():
@@ -37,7 +41,12 @@ def main():
     hotkey_mgr = HotkeyManager(on_hotkey)
     hotkey_mgr.start(load_hotkey())
 
+    start_trigger_listener(lambda: trigger_queue.put(True))
+
     popup = KaomojiPopup(root, store, hotkey_mgr)
+
+    if wants_show_on_start():
+        root.after(80, lambda: trigger_queue.put(True))
 
     def poll_queue():
         try:

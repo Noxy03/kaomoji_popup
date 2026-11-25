@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:   # manueller Testlauf (baut nur, veröffentlicht nichts)
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            sep: ";"
+            asset: kaomoji_popup.exe
+          - os: ubuntu-22.04     # älteres glibc -> läuft auf mehr Distros
+            sep: ":"
+            asset: kaomoji_popup-linux-x86_64.tar.gz
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Linux-Systempakete (tkinter)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+
+      - name: Abhängigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt pyinstaller
+
+      - name: Tests
+        run: pytest
+
+      - name: Tag mit CURRENT_VERSION vergleichen
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          python - <<'EOF'
+          import re, os, sys
+          src = open("kaomoji_popup/config.py", encoding="utf-8").read()
+          m = re.search(r'CURRENT_VERSION\s*=\s*["\']([^"\']+)["\']', src)
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          if not m or m.group(1) != tag:
+              sys.exit(f"CURRENT_VERSION ({m.group(1) if m else '?'}) != Tag ({tag})")
+          EOF
+
+      - name: Mit PyInstaller bauen
+        shell: bash
+        run: |
+          pyinstaller --onefile --noconsole --name kaomoji_popup \
+            --paths . \
+            --add-data "kaomoji_popup/resources/default_kaomojis.json${{ matrix.sep }}kaomoji_popup/resources" \
+            run_kaomoji_popup.py
+
+      - name: Linux-Binary als tar.gz packen
+        if: runner.os == 'Linux'
+        run: tar -czf dist/${{ matrix.asset }} -C dist kaomoji_popup
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: dist/${{ matrix.asset }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/*

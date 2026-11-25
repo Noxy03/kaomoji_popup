@@ -2,6 +2,7 @@
 KaomojiPopup: the borderless search/insert window opened by the global
 hotkey.
 """
+import os
 import tkinter as tk
 from tkinter import ttk
 
@@ -22,6 +23,7 @@ class KaomojiPopup:
         self.hotkey_mgr = hotkey_mgr
         self.win = None
         self._visible_items = []
+        self._has_grab = False
 
     def show(self):
         if self.win is not None:
@@ -126,12 +128,18 @@ class KaomojiPopup:
 
         self._update_tag_choices()
         self._refresh()
-        self.win.grab_set()
+        self._has_grab = False
+        self._try_grab()
 
     def _center(self):
-        x = self.root.winfo_pointerx() - WINDOW_WIDTH // 2
-        y = self.root.winfo_pointery() - WINDOW_HEIGHT // 2
-        self.win.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{max(x, 0)}+{max(y, 0)}")
+        px = self.root.winfo_pointerx()
+        py = self.root.winfo_pointery()
+        screen_w = self.win.winfo_screenwidth()
+        screen_h = self.win.winfo_screenheight()
+
+        x = max(0, min(px - WINDOW_WIDTH // 2, screen_w - WINDOW_WIDTH))
+        y = max(0, min(py - WINDOW_HEIGHT // 2, screen_h - WINDOW_HEIGHT))
+        self.win.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}")
 
     def _update_tag_choices(self):
         tags = ["All", config.RECENT_TAG_LABEL] + self.store.all_tags()
@@ -244,37 +252,50 @@ class KaomojiPopup:
         self.store.mark_used(item["id"])
         self._close()
 
-        if config.INSERT_MODE == "clipboard":
-            pyperclip.copy(kaomoji)
-            return
-
-        old_clip = None
-        if config.INSERT_MODE == "paste":
+        if config.INSERT_MODE in ("paste", "clipboard"):
             try:
-                old_clip = pyperclip.paste()
-            except Exception:
-                old_clip = None
-            pyperclip.copy(kaomoji)
+                pyperclip.copy(kaomoji)
+            except Exception as exc:
+                config.logger.warning("Clipboard copy failed: %s", exc)
+            if config.INSERT_MODE == "clipboard":
+                return
 
         def do_insert():
-            kb = keyboard.Controller()
-            if config.INSERT_MODE == "type":
-                kb.type(kaomoji)
-            elif config.INSERT_MODE == "paste":
-                kb.press(keyboard.Key.ctrl)
-                kb.press("v")
-                kb.release("v")
-                kb.release(keyboard.Key.ctrl)
-                if old_clip is not None:
-                    self.root.after(
-                        config.CLIPBOARD_RESTORE_DELAY_MS,
-                        lambda: pyperclip.copy(old_clip),
-                    )
+            try:
+                kb = keyboard.Controller()
+                if config.INSERT_MODE == "type":
+                    kb.type(kaomoji)
+                elif config.INSERT_MODE == "paste":
+                    kb.press(keyboard.Key.ctrl)
+                    kb.press("v")
+                    kb.release("v")
+                    kb.release(keyboard.Key.ctrl)
+            except Exception as exc:
+                config.logger.debug(
+                    "Best-effort insertion failed (%s): %s",
+                    config.INSERT_MODE,
+                    exc,
+                )
 
         self.root.after(config.INSERT_DELAY_MS, do_insert)
 
     def _close(self):
         if self.win is not None:
-            self.win.grab_release()
+            if self._has_grab:
+                try:
+                    self.win.grab_release()
+                except tk.TclError:
+                    pass
+                self._has_grab = False
             self.win.destroy()
             self.win = None
+
+    def _try_grab(self, retries: int = 12, delay_ms: int = 35):
+        if self.win is None or not self.win.winfo_exists():
+            return
+        try:
+            self.win.grab_set()
+            self._has_grab = True
+        except tk.TclError:
+            if retries > 0:
+                self.win.after(delay_ms, lambda: self._try_grab(retries - 1, delay_ms))

@@ -192,6 +192,7 @@ class KaomojiStore:
     # -- persistence ---------------------------------------------------------
 
     def save(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "items": self.items,
             "deleted_default_ids": self.deleted_default_ids,
