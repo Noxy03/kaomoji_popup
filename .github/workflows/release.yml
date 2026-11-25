@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:   # manueller Testlauf (baut nur, veröffentlicht nichts)
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
           - os: windows-latest
             sep: ";"
             asset: kaomoji_popup.exe
-          - os: ubuntu-22.04     # älteres glibc -> läuft auf mehr Distros
+          - os: ubuntu-22.04
             sep: ":"
             asset: kaomoji_popup-linux-x86_64.tar.gz
     runs-on: ${{ matrix.os }}
