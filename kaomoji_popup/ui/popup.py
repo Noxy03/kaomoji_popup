@@ -13,7 +13,8 @@ from .. import config
 from ..hotkey import HotkeyManager
 from ..store import KaomojiStore
 from .dialogs import ConfirmDialog, EntryDialog, SettingsDialog
-from .theme import COLORS, FONT_KAOMOJI, WINDOW_HEIGHT, WINDOW_WIDTH, make_treeview, style_toplevel
+from .theme import (COLORS, FONT_KAOMOJI, WINDOW_HEIGHT, WINDOW_WIDTH, apply_theme,
+                    make_treeview, refresh_system_theme, style_toplevel)
 
 
 class KaomojiPopup:
@@ -29,6 +30,9 @@ class KaomojiPopup:
         if self.win is not None:
             self._close()
             return
+
+        # In "System" mode, pick up desktop theme changes made since last time.
+        refresh_system_theme(self.root)
 
         self.win = tk.Toplevel(self.root)
         self.win.overrideredirect(True)
@@ -124,7 +128,7 @@ class KaomojiPopup:
                    command=self._open_add_dialog).pack(side="left")
         ttk.Button(btn_row, text="Edit", command=self._open_edit_dialog).pack(side="left", padx=(6, 0))
         ttk.Button(btn_row, text="Delete", command=self._delete_selected).pack(side="left", padx=(6, 0))
-        ttk.Button(btn_row, text="⚙ Hotkey", command=self._open_settings_dialog).pack(side="right")
+        ttk.Button(btn_row, text="⚙ Settings", command=self._open_settings_dialog).pack(side="right")
 
         self._update_tag_choices()
         self._refresh()
@@ -237,11 +241,16 @@ class KaomojiPopup:
         )
 
     def _open_settings_dialog(self):
-        SettingsDialog(self.win, self.hotkey_mgr, on_done=self._on_hotkey_changed)
+        SettingsDialog(self.win, self.hotkey_mgr, on_done=self._on_settings_changed)
 
-    def _on_hotkey_changed(self, new_hotkey: str):
-        # No popup restart needed; the listener is already running with the new hotkey.
-        pass
+    def _on_settings_changed(self, new_hotkey: str, theme_mode: str, theme_changed: bool):
+        # Hotkey: nothing to do, the listener is already running with the new one.
+        if theme_changed:
+            # Widgets pick their colours up at creation time, so the simplest
+            # correct way to re-theme is to rebuild the popup window.
+            apply_theme(self.root, theme_mode)
+            self._close()
+            self.root.after(50, self.show)
 
     def _after_data_change(self):
         self._update_tag_choices()

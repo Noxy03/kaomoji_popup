@@ -6,8 +6,9 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from .. import hotkey as hotkey_mod
+from .. import settings, themes
 from ..store import KaomojiStore
-from .theme import COLORS, FONT_KAOMOJI, center_window, style_toplevel
+from .theme import COLORS, FONT_KAOMOJI, center_window, get_theme_mode, style_toplevel
 
 
 class EntryDialog:
@@ -118,7 +119,11 @@ class ConfirmDialog:
 
 
 class SettingsDialog:
-    """Dialog for changing the global hotkey, registered live immediately."""
+    """Settings: global hotkey (registered live) and colour theme.
+
+    on_done(new_hotkey, theme_mode, theme_changed) is called after a
+    successful save; Cancel just closes the dialog without calling it.
+    """
 
     def __init__(self, parent: tk.Misc, hotkey_mgr: hotkey_mod.HotkeyManager, on_done):
         self.hotkey_mgr = hotkey_mgr
@@ -135,6 +140,7 @@ class SettingsDialog:
         frame = ttk.Frame(self.win, padding=16)
         frame.pack(fill="both", expand=True)
 
+        # -- Hotkey ----------------------------------------------------------
         ttk.Label(frame, text="Hotkey", font=("Consolas", 12, "bold")).pack(anchor="w")
 
         ctrl0, alt0, shift0, key0 = hotkey_mod.parse_hotkey(hotkey_mgr.current)
@@ -145,11 +151,11 @@ class SettingsDialog:
         self.alt_var = tk.BooleanVar(value=alt0)
         self.shift_var = tk.BooleanVar(value=shift0)
         ttk.Checkbutton(mod_frame, text="Ctrl", variable=self.ctrl_var,
-                         command=self._update_preview).pack(side="left")
+                        command=self._update_preview).pack(side="left")
         ttk.Checkbutton(mod_frame, text="Alt", variable=self.alt_var,
-                         command=self._update_preview).pack(side="left", padx=(10, 0))
+                        command=self._update_preview).pack(side="left", padx=(10, 0))
         ttk.Checkbutton(mod_frame, text="Shift", variable=self.shift_var,
-                         command=self._update_preview).pack(side="left", padx=(10, 0))
+                        command=self._update_preview).pack(side="left", padx=(10, 0))
 
         key_frame = ttk.Frame(frame)
         key_frame.pack(fill="x", pady=(4, 10))
@@ -163,16 +169,30 @@ class SettingsDialog:
             key0_norm = key0.upper()
         self.key_var = tk.StringVar(value=key0_norm if key0_norm in hotkey_mod.KEY_CHOICES else "K")
         key_combo = ttk.Combobox(key_frame, textvariable=self.key_var, values=hotkey_mod.KEY_CHOICES,
-                                  state="readonly", width=6)
+                                 state="readonly", width=6)
         key_combo.pack(side="left", padx=(8, 0))
         key_combo.bind("<<ComboboxSelected>>", lambda e: self._update_preview())
 
         self.preview_var = tk.StringVar()
         ttk.Label(frame, textvariable=self.preview_var, foreground=COLORS["lavender"]).pack(
-            anchor="w", pady=(0, 14)
+            anchor="w", pady=(0, 10)
         )
         self._update_preview()
 
+        ttk.Separator(frame, orient="horizontal").pack(fill="x", pady=(0, 10))
+
+        # -- Theme -----------------------------------------------------------
+        ttk.Label(frame, text="Theme", font=("Consolas", 12, "bold")).pack(anchor="w")
+
+        theme_frame = ttk.Frame(frame)
+        theme_frame.pack(fill="x", pady=(10, 14))
+        ttk.Label(theme_frame, text="Appearance:").pack(side="left")
+        self._mode_by_label = {label: mode for mode, label in themes.THEME_LABELS.items()}
+        self.theme_var = tk.StringVar(value=themes.THEME_LABELS[get_theme_mode()])
+        ttk.Combobox(theme_frame, textvariable=self.theme_var, values=list(self._mode_by_label),
+                     state="readonly", width=20).pack(side="left", padx=(8, 0))
+
+        # -- Buttons ---------------------------------------------------------
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill="x")
         ttk.Button(btn_frame, text="Cancel", command=self.win.destroy).pack(side="right", padx=(6, 0))
@@ -192,24 +212,35 @@ class SettingsDialog:
         if not self.key_var.get():
             messagebox.showerror("Kaomoji Popup", "Please choose a key.", parent=self.win)
             return
-        if not (self.ctrl_var.get() or self.alt_var.get() or self.shift_var.get()):
-            if not messagebox.askyesno(
-                "Kaomoji Popup",
-                "No modifier selected — this hotkey may interfere with normal typing. "
-                "Continue anyway?",
-                parent=self.win,
-            ):
-                return
 
         new_hotkey = hotkey_mod.build_hotkey(
             self.ctrl_var.get(), self.alt_var.get(), self.shift_var.get(), self.key_var.get()
         )
-        try:
-            self.hotkey_mgr.start(new_hotkey)
-        except Exception as e:
-            messagebox.showerror("Kaomoji Popup", f"Could not register hotkey: {e}", parent=self.win)
-            return
+        hotkey_changed = new_hotkey != self.hotkey_mgr.current
 
-        hotkey_mod.save_hotkey(new_hotkey)
+        # Only nag about missing modifiers if the hotkey is actually being
+        # changed - otherwise a pure theme change would trigger the warning.
+        if hotkey_changed and not (self.ctrl_var.get() or self.alt_var.get() or self.shift_var.get()):
+            if not messagebox.askyesno(
+                    "Kaomoji Popup",
+                    "No modifier selected — this hotkey may interfere with normal typing. "
+                    "Continue anyway?",
+                    parent=self.win,
+            ):
+                return
+
+        if hotkey_changed:
+            try:
+                self.hotkey_mgr.start(new_hotkey)
+            except Exception as e:
+                messagebox.showerror("Kaomoji Popup", f"Could not register hotkey: {e}", parent=self.win)
+                return
+            hotkey_mod.save_hotkey(new_hotkey)
+
+        new_mode = self._mode_by_label.get(self.theme_var.get(), themes.DEFAULT_THEME)
+        theme_changed = new_mode != get_theme_mode()
+        if theme_changed:
+            settings.save_theme_mode(new_mode)
+
         self.win.destroy()
-        self.on_done(new_hotkey)
+        self.on_done(new_hotkey, new_mode, theme_changed)

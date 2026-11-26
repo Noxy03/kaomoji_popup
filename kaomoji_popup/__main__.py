@@ -22,12 +22,13 @@ from .ui.popup import KaomojiPopup
 from .ui.theme import apply_theme
 from .updater import check_for_updates
 from .ipc import start_trigger_listener, wants_show_on_start
+from .settings import load_theme_mode
 
 
 def main():
     root = tk.Tk()
     root.withdraw()
-    apply_theme(root)
+    apply_theme(root, load_theme_mode())
 
     update_queue: "queue.Queue[dict]" = queue.Queue()
     threading.Thread(target=check_for_updates, args=(update_queue,), daemon=True).start()
@@ -64,9 +65,9 @@ def main():
             # Safe here: we're on the main thread (called via root.after),
             # unlike inside check_for_updates() which runs in a background thread.
             if messagebox.askyesno(
-                "Kaomoji Popup",
-                f"A new version ({info['version']}) is available "
-                f"(you have {config.CURRENT_VERSION}). Open the release page?",
+                    "Kaomoji Popup",
+                    f"A new version ({info['version']}) is available "
+                    f"(you have {config.CURRENT_VERSION}). Open the release page?",
             ):
                 webbrowser.open(info["url"])
 

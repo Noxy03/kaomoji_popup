@@ -23,23 +23,23 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
   - The most frequently/recently used kaomojis are highlighted with a `⭐` in the main view and automatically float to the top of the full list — reordering is computed fresh every time the popup opens, so it's always up to date.
 - **Automatic Update Check:** On startup, the app checks GitHub Releases for a newer version and asks (via a dialog) whether to open the release page — it never opens anything without confirmation.
 - **New Default Kaomojis via Update:** When the developer adds new entries to the built-in kaomoji list, they're merged in automatically the next time you start the app — without duplicating kaomojis you already have and without bringing back ones you deliberately deleted.
-- **Modern Design:** Dark theme with an elegant **Catppuccin Mocha** color scheme.
+- **Themes:** Switch under `⚙ Settings → Theme` between **Catppuccin Mocha** (default), **Dark**, **Light** and **System**. "System" follows your desktop: on KDE Plasma it uses the colors of your active color scheme (`~/.config/kdeglobals`), on GNOME and other desktops it follows the dark/light preference, on Windows the app theme setting. It is re-checked every time the popup opens, so a change of your desktop theme is picked up without restarting.
 
 ---
 
 ## 🛠️ Usage & Shortcuts
 
-| Action | Shortcut / Interaction                                          |
-| :--- |:----------------------------------------------------------------|
+| Action                 | Shortcut / Interaction                                          |
+|:---------------------- |:--------------------------------------------------------------- |
 | **Open / Close Popup** | Global hotkey (Default: `Ctrl+Shift+Space`)                     |
-| **Search & Filter** | Type text into the search box or select a tag from the dropdown |
-| **Navigate List** | `Up / Down Arrow` (`↑ / ↓`) from the search box                 |
-| **Insert Entry** | `Enter` or `Click` on an entry                                  |
-| **Edit Entry** | Select entry → `Edit` button                                    |
-| **Delete Entry** | Select entry → `Delete` key or `Delete` button                  |
-| **Add New Entry** | `+ Add` button                                                  |
-| **Customize Hotkey** | `⚙ Hotkey` button                                               |
-| **Close Window** | `Escape`, the `×` button top-right, or press the hotkey again   |
+| **Search & Filter**    | Type text into the search box or select a tag from the dropdown |
+| **Navigate List**      | `Up / Down Arrow` (`↑ / ↓`) from the search box                 |
+| **Insert Entry**       | `Enter` or `Click` on an entry                                  |
+| **Edit Entry**         | Select entry → `Edit` button                                    |
+| **Delete Entry**       | Select entry → `Delete` key or `Delete` button                  |
+| **Add New Entry**      | `+ Add` button                                                  |
+| **Hotkey & Theme**     | `⚙ Settings` button                                             |
+| **Close Window**       | `Escape`, the `×` button top-right, or press the hotkey again   |
 
 ---
 
@@ -58,6 +58,7 @@ Every release on the [Releases](https://github.com/Noxy03/kaomoji_popup/releases
 
 1. Download `kaomoji_popup-linux-x86_64.tar.gz`.
 2. Extract and start it:
+
    ```bash
    tar -xzf kaomoji_popup-linux-x86_64.tar.gz
    ./kaomoji_popup
@@ -71,9 +72,11 @@ The Linux binary is built on Ubuntu 22.04 so it runs on most current distributio
 ### Option 2: Running from Source
 
 #### Requirements
+
 - Python 3.8 or newer
 
 #### Install Dependencies
+
 ```bash
 pip install pynput pyperclip
 ```
@@ -93,6 +96,7 @@ python -m kaomoji_popup
 ```
 
 ### Building the Executable Locally
+
 Releases are built by GitHub Actions (see *For Maintainers* below), so you normally don't need this. To build a standalone binary on your own machine:
 
 ```bash
@@ -132,12 +136,12 @@ On KDE Plasma you can alternatively use *System Settings → Autostart*.
 
 Your personal kaomoji list lives in `kaomojis.json` inside the app's config folder (the path is printed to the console on startup):
 
-| OS | Location |
-| :--- | :--- |
-| **Windows** | `%APPDATA%\kaomoji_popup\` |
-| **Linux** | `$XDG_CONFIG_HOME/kaomoji_popup/` (default: `~/.config/kaomoji_popup/`) |
+| OS          | Location                                                                |
+|:----------- |:----------------------------------------------------------------------- |
+| **Windows** | `%APPDATA%\kaomoji_popup\`                                              |
+| **Linux**   | `$XDG_CONFIG_HOME/kaomoji_popup/` (default: `~/.config/kaomoji_popup/`) |
 
-The same folder also holds `settings.json` and the log file `kaomoji_popup.log`. Each entry has a stable internal `id` — entries you create yourself are marked `"origin": "user"`, entries that came from the built-in list are marked `"origin": "default"`.
+The same folder also holds `settings.json` (hotkey and theme) and the log file `kaomoji_popup.log`. Each entry has a stable internal `id` — entries you create yourself are marked `"origin": "user"`, entries that came from the built-in list are marked `"origin": "default"`.
 
 You never need to touch this file by hand; it's shown here just so you know your customizations, deletions, and usage history are preserved safely across updates.
 
@@ -151,6 +155,7 @@ Workflow when extending the list:
 
 1. Add your new kaomojis to `kaomoji_popup/resources/default_kaomojis.json` as usual (no need to set an `id` by hand).
 2. Run the helper script to assign ids to the new entries only — existing ids are never touched:
+
    ```bash
    python assign_default_ids.py kaomoji_popup/resources/default_kaomojis.json
    ```

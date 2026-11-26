@@ -1,32 +1,21 @@
 """
 Hotkey: persistence, parsing, live re-registration.
 """
-import json
-
 from pynput import keyboard
 
-from . import config
+from . import settings
 
 HOTKEY = "<ctrl>+<shift>+<space>"
 KEY_CHOICES = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") + [f"f{i}" for i in range(1, 13)] + ["space"]
 
 
 def load_hotkey():
-    if config.USER_SETTINGS_FILE.exists():
-        try:
-            with open(config.USER_SETTINGS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                hk = data.get("hotkey")
-                if hk:
-                    return hk
-        except (json.JSONDecodeError, OSError):
-            pass
-    return HOTKEY
+    hk = settings.load_settings().get("hotkey")
+    return hk if isinstance(hk, str) and hk else HOTKEY
 
 
 def save_hotkey(hotkey_str: str):
-    with open(config.USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
-        json.dump({"hotkey": hotkey_str}, f, ensure_ascii=False, indent=2)
+    settings.update_settings(hotkey=hotkey_str)
 
 
 def parse_hotkey(hotkey_str: str):
@@ -55,7 +44,7 @@ def build_hotkey(ctrl: bool, alt: bool, shift: bool, key: str) -> str:
         parts.append("<shift>")
     if key:
         key = key.lower()  # pynput treats "K" and "k" as different key codes;
-                            # always normalize plain letters to lowercase.
+        # always normalize plain letters to lowercase.
         # F-keys and "space" must be enclosed in <...>
         if (key.startswith("f") and key[1:].isdigit()) or key == "space":
             parts.append(f"<{key}>")
