@@ -45,10 +45,26 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
 
 ## 💻 Installation
 
-### Option 1: Standalone Executable (Windows - Recommended)
+### Option 1: Standalone Executable (Windows & Linux - Recommended)
 
-1. Download the latest `kaomoji_popup.exe` from the [Releases](https://github.com/Noxy03/kaomoji_popup/releases) page.
-2. Run the `.exe` file. No Python installation required!
+Every release on the [Releases](https://github.com/Noxy03/kaomoji_popup/releases) page is built automatically by GitHub Actions and contains one file per platform. No Python installation required.
+
+**Windows**
+
+1. Download `kaomoji_popup.exe`.
+2. Run it.
+
+**Linux (x86_64)**
+
+1. Download `kaomoji_popup-linux-x86_64.tar.gz`.
+2. Extract and start it:
+   ```bash
+   tar -xzf kaomoji_popup-linux-x86_64.tar.gz
+   ./kaomoji_popup
+   ```
+3. If the execute bit is missing, run `chmod +x kaomoji_popup` first.
+
+The Linux binary is built on Ubuntu 22.04 so it runs on most current distributions. It needs an X11 session (see *Known Limitations & Notes* below). ARM devices such as the Raspberry Pi are not supported by the prebuilt binary - run from source instead.
 
 ---
 
@@ -73,16 +89,20 @@ pip install pynput pyperclip
 ### Start the Application
 
 ```bash
-python kaomoji_popup.py
+python -m kaomoji_popup
 ```
 
-### Building the Executable
-To build a single standalone .exe bundle with PyInstaller:
+### Building the Executable Locally
+Releases are built by GitHub Actions (see *For Maintainers* below), so you normally don't need this. To build a standalone binary on your own machine:
 
 ```bash
-pip install pyinstaller
-pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_popup.py
+pip install -r requirements-dev.txt pyinstaller
+pyinstaller --onefile --noconsole --name kaomoji_popup --paths . \
+  --add-data "kaomoji_popup/resources/default_kaomojis.json:kaomoji_popup/resources" \
+  run_kaomoji_popup.py
 ```
+
+On Windows, use `;` instead of `:` in the `--add-data` argument. The result is in `dist/`.
 
 ---
 
@@ -93,11 +113,31 @@ pyinstaller --onefile --noconsole --add-data "default_kaomojis.json;." kaomoji_p
 1. Press `Win + R`, type `shell:startup`, and press `Enter`.
 2. Create a shortcut to `kaomoji_popup.exe` inside this folder.
 
+### Linux (most desktop environments)
+
+Create `~/.config/autostart/kaomoji_popup.desktop` with the path to your binary:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Kaomoji Popup
+Exec=/path/to/kaomoji_popup
+```
+
+On KDE Plasma you can alternatively use *System Settings → Autostart*.
+
 ---
 
 ## 🗃️ Data & Storage
 
-Your personal kaomoji list lives in `kaomojis.json` inside the app's AppData/config folder (path is printed to the console on startup). Each entry has a stable internal `id` — entries you create yourself are marked `"origin": "user"`, entries that came from the built-in list are marked `"origin": "default"`.
+Your personal kaomoji list lives in `kaomojis.json` inside the app's config folder (the path is printed to the console on startup):
+
+| OS | Location |
+| :--- | :--- |
+| **Windows** | `%APPDATA%\kaomoji_popup\` |
+| **Linux** | `$XDG_CONFIG_HOME/kaomoji_popup/` (default: `~/.config/kaomoji_popup/`) |
+
+The same folder also holds `settings.json` and the log file `kaomoji_popup.log`. Each entry has a stable internal `id` — entries you create yourself are marked `"origin": "user"`, entries that came from the built-in list are marked `"origin": "default"`.
 
 You never need to touch this file by hand; it's shown here just so you know your customizations, deletions, and usage history are preserved safely across updates.
 
@@ -109,12 +149,29 @@ When adding new entries to the bundled default kaomoji list, new entries are mer
 
 Workflow when extending the list:
 
-1. Add your new kaomojis to `default_kaomojis.json` as usual (no need to set an `id` by hand).
+1. Add your new kaomojis to `kaomoji_popup/resources/default_kaomojis.json` as usual (no need to set an `id` by hand).
 2. Run the helper script to assign ids to the new entries only — existing ids are never touched:
    ```bash
-   python assign_default_ids.py default_kaomojis.json
+   python assign_default_ids.py kaomoji_popup/resources/default_kaomojis.json
    ```
-3. Review the diff, commit, and publish the release as usual.
+3. Review the diff and commit.
+
+### Publishing a release
+
+Releases are created automatically when a version tag is pushed. Order matters:
+
+```bash
+# 1. Bump CURRENT_VERSION in kaomoji_popup/config.py (e.g. "1.1.0"), then:
+git add kaomoji_popup/config.py
+git commit -m "Bump version to 1.1.0"
+
+# 2. Tag the commit (tag = "v" + CURRENT_VERSION) and push branch and tag
+git tag v1.1.0
+git push origin main
+git push origin v1.1.0
+```
+
+The workflow in `.github/workflows/release.yml` then runs the tests, checks that the tag matches `CURRENT_VERSION`, builds the Windows `.exe` and the Linux `.tar.gz` in parallel, and attaches both to a new GitHub Release. Progress is visible in the repository's **Actions** tab. See `DEV.md` for details and pitfalls.
 
 ---
 
@@ -122,6 +179,8 @@ Workflow when extending the list:
 
 - **Wayland (Linux):** `pynput` relies on X11 APIs for global hotkeys and simulated key combinations (`Ctrl+V` / typing). Under a pure Wayland session (e.g., GNOME/KDE without XWayland fallback), functionality may be restricted for security reasons. A workaround can be implemented using compositor tools like `ydotool`.
 - **Password & Security Fields:** Some secure input fields or terminal emulators block clipboard pasting. In these cases, switching to `"type"` mode (`INSERT_MODE = "type"`) or pasting manually with `Ctrl+V` is recommended.
+- **Linux binary:** Built for x86_64 on Ubuntu 22.04 (glibc 2.35 or newer). Older distributions or ARM devices should run from source.
+- **Windows SmartScreen:** The `.exe` is not code-signed yet, so Windows Defender / SmartScreen may show a warning on first start.
 - **Multi-Monitor Setups:** The popup opens at the current cursor/mouse position.
 
 ---
@@ -131,5 +190,4 @@ Workflow when extending the list:
 - Change Pop-Up opening mode: open in the middle of the screen
 - Open on correct monitor
 - Option to close on background-click
-- Signature via Github-actions 
-- Linux Test
+- Code signing for the Windows `.exe` via GitHub Actions
