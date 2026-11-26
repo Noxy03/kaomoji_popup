@@ -1,8 +1,19 @@
 import json
+import sys
+from unittest import mock
 
 import pytest
 
-from kaomoji_popup import config, hotkey, settings
+try:
+    from kaomoji_popup import hotkey
+except ImportError:
+    # Real pynput refuses to import without an X server (headless Linux CI).
+    # Only hotkey's load/save helpers are used here, so a stub is enough.
+    for _name in ("pynput", "pynput.keyboard"):
+        sys.modules.setdefault(_name, mock.MagicMock())
+    from kaomoji_popup import hotkey
+
+from kaomoji_popup import config, settings
 
 
 @pytest.fixture(autouse=True)

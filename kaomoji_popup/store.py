@@ -4,7 +4,7 @@ sync/tombstone system, sorting, and persistence.
 """
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from tkinter import messagebox
 
@@ -231,10 +231,35 @@ class KaomojiStore:
             self.deleted_default_ids.append(item_id)
         self.save()
 
+    def _next_timestamp(self) -> str:
+        """A 'last_used' stamp that is strictly newer than every existing one.
+
+        datetime.now() alone is not enough: on Windows the clock only ticks
+        every ~15 ms, so two quick uses can get the identical stamp, and a
+        local-time clock can also jump backwards (DST change, manual
+        adjustment). Either would make the newer use sort *below* an older
+        one in the "recently used" list.
+        """
+        now = datetime.now()
+        newest = None
+        for item in self.items:
+            stamp = item.get("last_used")
+            if not stamp:
+                continue
+            try:
+                parsed = datetime.fromisoformat(stamp)
+            except (TypeError, ValueError):
+                continue
+            if newest is None or parsed > newest:
+                newest = parsed
+        if newest is not None and now <= newest:
+            now = newest + timedelta(microseconds=1)
+        return now.isoformat()
+
     def mark_used(self, item_id: str):
         for item in self.items:
             if item["id"] == item_id:
-                item["last_used"] = datetime.now().isoformat()
+                item["last_used"] = self._next_timestamp()
                 item["use_count"] = item.get("use_count", 0) + 1
                 self.save()
                 return
