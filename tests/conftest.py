@@ -11,10 +11,10 @@ other Tk widget class - only KaomojiStore and the small pure-function
 utilities (_version_tuple, hotkey parsing) that don't need a display.
 """
 import json
+import logging
 import os
 import sys
 import types
-from pathlib import Path
 
 import pytest
 
@@ -56,13 +56,10 @@ def _isolated_appdata(tmp_path_factory):
     """Points the app's config dir at a throwaway temp dir for the whole
     test session, BEFORE kaomoji_popup is ever imported, so tests never
     create or touch a real user's KaomojiPopup folder or log file.
-
-    Uses XDG_CONFIG_HOME since that's what get_appdata_dir() reads on
-    Linux/CI. (On Windows this fixture would need to set APPDATA instead -
-    not needed for this project's CI, which runs on Linux.)
     """
     config_dir = tmp_path_factory.mktemp("xdg_config")
     os.environ["XDG_CONFIG_HOME"] = str(config_dir)
+    os.environ["APPDATA"] = str(config_dir)
     yield config_dir
 
 
@@ -71,6 +68,7 @@ def kp(_isolated_appdata):
     tk = _stub_module("tkinter")
     _stub_module("tkinter.ttk")
     messagebox = _stub_module("tkinter.messagebox")
+    messagebox.showwarning = lambda *a, **kw: None
     tk.messagebox = messagebox
     tk.ttk = sys.modules["tkinter.ttk"]
 
@@ -81,6 +79,25 @@ def kp(_isolated_appdata):
     _stub_module("pyperclip")
 
     import kaomoji_popup.config as config
+
+    isolated_app_dir = _isolated_appdata / config.APP_NAME
+    isolated_app_dir.mkdir(parents=True, exist_ok=True)
+
+    config.CONFIG_DIR = isolated_app_dir
+    config.USER_DATA_FILE = isolated_app_dir / "kaomojis.json"
+    config.USER_SETTINGS_FILE = isolated_app_dir / "settings.json"
+    config.LOG_FILE = isolated_app_dir / "kaomoji_popup.log"
+
+    for handler in list(config.logger.handlers):
+        if isinstance(handler, logging.FileHandler):
+            config.logger.removeHandler(handler)
+            handler.close()
+
+    file_handler = logging.FileHandler(config.LOG_FILE, encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+    config.logger.addHandler(file_handler)
+
     from kaomoji_popup.store import KaomojiStore
     from kaomoji_popup.hotkey import (
         build_hotkey,

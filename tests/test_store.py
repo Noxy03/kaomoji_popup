@@ -62,7 +62,7 @@ def test_current_format_items_missing_id_are_migrated(kp, tmp_path, store_factor
     assert store.items[0]["origin"] == "default"
 
 
-def test_corrupted_json_falls_back_to_defaults_without_crashing(tmp_path, store_factory):
+def test_corrupted_json_falls_back_to_defaults_without_crashing(kp, tmp_path, store_factory):
     defaults = [default_entry("d_a", "(^_^)", "happy")]
     user_file = tmp_path / "kaomojis.json"
     user_file.write_text("{not valid json", encoding="utf-8")
