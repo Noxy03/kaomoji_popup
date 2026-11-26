@@ -133,6 +133,91 @@ def center_window(win: tk.Toplevel, parent: tk.Misc = None):
     win.geometry(f"+{max(x, 0)}+{max(y, 0)}")
 
 
+def build_header(win: tk.Toplevel, title: str, on_close) -> tk.Frame:
+    """Custom title bar for borderless windows: title, drag-to-move, and a
+    close button. Must be created before the window's content is packed."""
+    header = tk.Frame(win, bg=COLORS["mantle"], cursor="fleur", height=28)
+    header.pack(fill="x", side="top")
+    header.pack_propagate(False)
+
+    title_lbl = tk.Label(header, text=title, bg=COLORS["mantle"], fg=COLORS["subtext0"],
+                         font=("Consolas", 9))
+    title_lbl.pack(side="left", padx=6, pady=4)
+
+    close_btn = tk.Label(header, text="×", bg=COLORS["mantle"], fg=COLORS["subtext0"],
+                         font=("Consolas", 12), cursor="arrow")
+    close_btn.pack(side="right", padx=(0, 8), pady=2)
+    close_btn.bind("<Button-1>", lambda e: on_close())
+    close_btn.bind("<Enter>", lambda e: close_btn.configure(fg=COLORS["red"]))
+    close_btn.bind("<Leave>", lambda e: close_btn.configure(fg=COLORS["subtext0"]))
+
+    drag = {"x": 0, "y": 0}
+
+    def start_drag(event):
+        drag["x"], drag["y"] = event.x, event.y
+
+    def do_drag(event):
+        x = win.winfo_x() + (event.x - drag["x"])
+        y = win.winfo_y() + (event.y - drag["y"])
+        win.geometry(f"+{x}+{y}")
+
+    for widget in (header, title_lbl):
+        widget.bind("<Button-1>", start_drag)
+        widget.bind("<B1-Motion>", do_drag)
+    return header
+
+
+def prepare_dialog(win: tk.Toplevel, title: str, on_close=None):
+    """Makes a fresh Toplevel a borderless dialog in the popup's style.
+
+    Why borderless (overrideredirect): the main popup is override-redirect,
+    and on X11 such windows always stack above window-manager-managed ones.
+    A normal dialog opened from the popup would therefore appear *behind*
+    it. Making the dialog override-redirect too and raising it afterwards
+    (finish_dialog) keeps it on top.
+    """
+    style_toplevel(win)
+    win.title(title)
+    win.overrideredirect(True)
+    win.attributes("-topmost", True)
+    win.configure(highlightthickness=1, highlightbackground=COLORS["surface2"],
+                  highlightcolor=COLORS["surface2"])
+    build_header(win, f" {title}", on_close or win.destroy)
+
+
+def finish_dialog(win: tk.Toplevel, retries: int = 20):
+    """Call once the dialog's content is built and positioned: raises it,
+    focuses it and makes it modal. The grab is retried because it fails
+    until the window is actually mapped."""
+    try:
+        if not win.winfo_exists():
+            return
+        win.lift()
+        win.focus_force()
+        win.grab_set()
+    except tk.TclError:
+        if retries > 0:
+            try:
+                win.after(30, finish_dialog, win, retries - 1)
+            except tk.TclError:
+                pass
+
+
+def close_dialog(win: tk.Toplevel, parent: tk.Misc = None):
+    """Destroys a dialog and hands grab and focus back to its parent window."""
+    try:
+        win.grab_release()
+    except tk.TclError:
+        pass
+    win.destroy()
+    if parent is not None:
+        try:
+            parent.grab_set()
+            parent.focus_force()
+        except tk.TclError:
+            pass
+
+
 def make_treeview(parent) -> ttk.Treeview:
     tree = ttk.Treeview(
         parent,

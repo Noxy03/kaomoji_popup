@@ -44,7 +44,7 @@ def build_hotkey(ctrl: bool, alt: bool, shift: bool, key: str) -> str:
         parts.append("<shift>")
     if key:
         key = key.lower()  # pynput treats "K" and "k" as different key codes;
-        # always normalize plain letters to lowercase.
+                            # always normalize plain letters to lowercase.
         # F-keys and "space" must be enclosed in <...>
         if (key.startswith("f") and key[1:].isdigit()) or key == "space":
             parts.append(f"<{key}>")

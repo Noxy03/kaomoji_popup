@@ -65,9 +65,9 @@ def main():
             # Safe here: we're on the main thread (called via root.after),
             # unlike inside check_for_updates() which runs in a background thread.
             if messagebox.askyesno(
-                    "Kaomoji Popup",
-                    f"A new version ({info['version']}) is available "
-                    f"(you have {config.CURRENT_VERSION}). Open the release page?",
+                "Kaomoji Popup",
+                f"A new version ({info['version']}) is available "
+                f"(you have {config.CURRENT_VERSION}). Open the release page?",
             ):
                 webbrowser.open(info["url"])
 

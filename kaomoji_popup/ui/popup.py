@@ -9,11 +9,11 @@ from tkinter import ttk
 import pyperclip
 from pynput import keyboard
 
-from .. import config
+from .. import config, monitors, settings
 from ..hotkey import HotkeyManager
 from ..store import KaomojiStore
 from .dialogs import ConfirmDialog, EntryDialog, SettingsDialog
-from .theme import (COLORS, FONT_KAOMOJI, WINDOW_HEIGHT, WINDOW_WIDTH, apply_theme,
+from .theme import (FONT_KAOMOJI, WINDOW_HEIGHT, WINDOW_WIDTH, apply_theme, build_header,
                     make_treeview, refresh_system_theme, style_toplevel)
 
 
@@ -39,7 +39,7 @@ class KaomojiPopup:
         style_toplevel(self.win)
         self.win.title("Kaomoji Picker")
         self.win.resizable(False, False)
-        self._center()
+        self._place_window()
 
         # - Force window to foreground ---
         self.win.attributes("-topmost", True)
@@ -52,49 +52,7 @@ class KaomojiPopup:
         self.win.bind("<Escape>", lambda e: self._close())
         self.win.protocol("WM_DELETE_WINDOW", self._close)
 
-        header = tk.Frame(self.win, bg=COLORS["mantle"], cursor="fleur", height=28)
-        header.pack(fill="x", side="top")
-        header.pack_propagate(False)
-
-        title_lbl = tk.Label(
-            header,
-            text=" Kaomoji Picker",
-            bg=COLORS["mantle"],
-            fg=COLORS["subtext0"],
-            font=("Consolas", 9)
-        )
-        title_lbl.pack(side="left", padx=6, pady=4)
-
-        close_btn = tk.Label(
-            header,
-            text="×",
-            bg=COLORS["mantle"],
-            fg=COLORS["subtext0"],
-            font=("Consolas", 12),
-            cursor="arrow",
-        )
-        close_btn.pack(side="right", padx=(0, 8), pady=2)
-        close_btn.bind("<Button-1>", lambda e: self._close())
-        close_btn.bind("<Enter>", lambda e: close_btn.configure(fg=COLORS["red"]))
-        close_btn.bind("<Leave>", lambda e: close_btn.configure(fg=COLORS["subtext0"]))
-
-        # Dragging-Logic
-        self._drag_start_x = 0
-        self._drag_start_y = 0
-
-        def start_drag(event):
-            self._drag_start_x = event.x
-            self._drag_start_y = event.y
-
-        def do_drag(event):
-            x = self.win.winfo_x() + (event.x - self._drag_start_x)
-            y = self.win.winfo_y() + (event.y - self._drag_start_y)
-            self.win.geometry(f"+{x}+{y}")
-
-        header.bind("<Button-1>", start_drag)
-        header.bind("<B1-Motion>", do_drag)
-        title_lbl.bind("<Button-1>", start_drag)
-        title_lbl.bind("<B1-Motion>", do_drag)
+        build_header(self.win, " Kaomoji Picker", self._close)
 
         frame = ttk.Frame(self.win, padding=8)
         frame.pack(fill="both", expand=True)
@@ -135,14 +93,25 @@ class KaomojiPopup:
         self._has_grab = False
         self._try_grab()
 
-    def _center(self):
+    def _place_window(self):
+        """Positions the window on the monitor the mouse cursor is on:
+        either centered there, or centered under the cursor (kept fully
+        on that monitor), depending on the "popup_position" setting."""
         px = self.root.winfo_pointerx()
         py = self.root.winfo_pointery()
-        screen_w = self.win.winfo_screenwidth()
-        screen_h = self.win.winfo_screenheight()
+        screen = (0, 0, self.win.winfo_screenwidth(), self.win.winfo_screenheight())
+        mx, my, mw, mh = monitors.monitor_for_point(px, py, fallback=screen)
 
-        x = max(0, min(px - WINDOW_WIDTH // 2, screen_w - WINDOW_WIDTH))
-        y = max(0, min(py - WINDOW_HEIGHT // 2, screen_h - WINDOW_HEIGHT))
+        if settings.load_popup_position() == settings.POSITION_CENTER:
+            x = mx + (mw - WINDOW_WIDTH) // 2
+            y = my + (mh - WINDOW_HEIGHT) // 2
+        else:
+            x = px - WINDOW_WIDTH // 2
+            y = py - WINDOW_HEIGHT // 2
+            x = min(x, mx + mw - WINDOW_WIDTH)
+            y = min(y, my + mh - WINDOW_HEIGHT)
+        # max() last, so a monitor smaller than the window keeps its top-left visible.
+        x, y = max(x, mx), max(y, my)
         self.win.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}")
 
     def _update_tag_choices(self):
@@ -243,12 +212,14 @@ class KaomojiPopup:
     def _open_settings_dialog(self):
         SettingsDialog(self.win, self.hotkey_mgr, on_done=self._on_settings_changed)
 
-    def _on_settings_changed(self, new_hotkey: str, theme_mode: str, theme_changed: bool):
+    def _on_settings_changed(self, theme_mode: str, theme_changed: bool, position_changed: bool):
         # Hotkey: nothing to do, the listener is already running with the new one.
         if theme_changed:
-            # Widgets pick their colours up at creation time, so the simplest
-            # correct way to re-theme is to rebuild the popup window.
             apply_theme(self.root, theme_mode)
+        if theme_changed or position_changed:
+            # Widgets read their colours when created and the position is
+            # computed in show(), so the simplest correct way to apply
+            # either is to rebuild the popup.
             self._close()
             self.root.after(50, self.show)
 

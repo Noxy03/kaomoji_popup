@@ -33,3 +33,28 @@ def load_theme_mode() -> str:
 
 def save_theme_mode(mode: str) -> None:
     update_settings(theme=normalize_mode(mode))
+
+
+# -- window position ---------------------------------------------------------
+
+POSITION_CURSOR = "cursor"
+POSITION_CENTER = "center"
+DEFAULT_POSITION = POSITION_CURSOR
+
+# Display order in the settings dialog.
+POSITION_LABELS = {
+    POSITION_CURSOR: "Near cursor",
+    POSITION_CENTER: "Center of screen",
+}
+
+
+def normalize_position(value) -> str:
+    return value if value in POSITION_LABELS else DEFAULT_POSITION
+
+
+def load_popup_position() -> str:
+    return normalize_position(load_settings().get("popup_position"))
+
+
+def save_popup_position(value: str) -> None:
+    update_settings(popup_position=normalize_position(value))

@@ -48,3 +48,23 @@ def test_unknown_theme_value_falls_back(temp_settings_file):
     assert settings.load_theme_mode() == "mocha"
     settings.save_theme_mode("also-bogus")
     assert settings.load_settings()["theme"] == "mocha"
+
+
+def test_popup_position_default_and_roundtrip():
+    assert settings.load_popup_position() == "cursor"
+    settings.save_popup_position("center")
+    assert settings.load_popup_position() == "center"
+
+
+def test_popup_position_unknown_value_falls_back(temp_settings_file):
+    settings.update_settings(popup_position="diagonal")
+    assert settings.load_popup_position() == "cursor"
+
+
+def test_all_settings_coexist():
+    hotkey.save_hotkey("<ctrl>+k")
+    settings.save_theme_mode("light")
+    settings.save_popup_position("center")
+    assert hotkey.load_hotkey() == "<ctrl>+k"
+    assert settings.load_theme_mode() == "light"
+    assert settings.load_popup_position() == "center"

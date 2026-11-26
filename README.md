@@ -23,23 +23,24 @@ A lightweight, fast desktop tool in Python for searching and inserting kaomojis 
   - The most frequently/recently used kaomojis are highlighted with a `⭐` in the main view and automatically float to the top of the full list — reordering is computed fresh every time the popup opens, so it's always up to date.
 - **Automatic Update Check:** On startup, the app checks GitHub Releases for a newer version and asks (via a dialog) whether to open the release page — it never opens anything without confirmation.
 - **New Default Kaomojis via Update:** When the developer adds new entries to the built-in kaomoji list, they're merged in automatically the next time you start the app — without duplicating kaomojis you already have and without bringing back ones you deliberately deleted.
+- **Window Position:** Under `⚙ Settings → Window` choose whether the popup opens **near the cursor** (default) or in the **center of the screen**. "Screen" means the monitor the mouse cursor is on, so it works on multi-monitor setups; the popup never leaves that monitor. On Linux the monitor layout is read via `xrandr` (package `x11-xserver-utils` on Debian/Ubuntu, usually preinstalled); without it the popup falls back to the whole desktop.
 - **Themes:** Switch under `⚙ Settings → Theme` between **Catppuccin Mocha** (default), **Dark**, **Light** and **System**. "System" follows your desktop: on KDE Plasma it uses the colors of your active color scheme (`~/.config/kdeglobals`), on GNOME and other desktops it follows the dark/light preference, on Windows the app theme setting. It is re-checked every time the popup opens, so a change of your desktop theme is picked up without restarting.
 
 ---
 
 ## 🛠️ Usage & Shortcuts
 
-| Action                 | Shortcut / Interaction                                          |
-|:---------------------- |:--------------------------------------------------------------- |
-| **Open / Close Popup** | Global hotkey (Default: `Ctrl+Shift+Space`)                     |
-| **Search & Filter**    | Type text into the search box or select a tag from the dropdown |
-| **Navigate List**      | `Up / Down Arrow` (`↑ / ↓`) from the search box                 |
-| **Insert Entry**       | `Enter` or `Click` on an entry                                  |
-| **Edit Entry**         | Select entry → `Edit` button                                    |
-| **Delete Entry**       | Select entry → `Delete` key or `Delete` button                  |
-| **Add New Entry**      | `+ Add` button                                                  |
-| **Hotkey & Theme**     | `⚙ Settings` button                                             |
-| **Close Window**       | `Escape`, the `×` button top-right, or press the hotkey again   |
+| Action                       | Shortcut / Interaction                                          |
+|:---------------------------- |:--------------------------------------------------------------- |
+| **Open / Close Popup**       | Global hotkey (Default: `Ctrl+Shift+Space`)                     |
+| **Search & Filter**          | Type text into the search box or select a tag from the dropdown |
+| **Navigate List**            | `Up / Down Arrow` (`↑ / ↓`) from the search box                 |
+| **Insert Entry**             | `Enter` or `Click` on an entry                                  |
+| **Edit Entry**               | Select entry → `Edit` button                                    |
+| **Delete Entry**             | Select entry → `Delete` key or `Delete` button                  |
+| **Add New Entry**            | `+ Add` button                                                  |
+| **Hotkey, Theme & Position** | `⚙ Settings` button                                             |
+| **Close Window**             | `Escape`, the `×` button top-right, or press the hotkey again   |
 
 ---
 
@@ -186,13 +187,11 @@ The workflow in `.github/workflows/release.yml` then runs the tests, checks that
 - **Password & Security Fields:** Some secure input fields or terminal emulators block clipboard pasting. In these cases, switching to `"type"` mode (`INSERT_MODE = "type"`) or pasting manually with `Ctrl+V` is recommended.
 - **Linux binary:** Built for x86_64 on Ubuntu 22.04 (glibc 2.35 or newer). Older distributions or ARM devices should run from source.
 - **Windows SmartScreen:** The `.exe` is not code-signed yet, so Windows Defender / SmartScreen may show a warning on first start.
-- **Multi-Monitor Setups:** The popup opens at the current cursor/mouse position.
+- **Multi-Monitor Setups:** The popup opens on the monitor the cursor is on (near the cursor or centered, see *Window Position*). Monitor detection on Windows is untested on setups with mixed DPI scaling.
 
 ---
 
 ## 🔜 Coming Soon
 
-- Change Pop-Up opening mode: open in the middle of the screen
-- Open on correct monitor
 - Option to close on background-click
 - Code signing for the Windows `.exe` via GitHub Actions
