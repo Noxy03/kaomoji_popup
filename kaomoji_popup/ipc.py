@@ -20,6 +20,9 @@ def start_trigger_listener(on_trigger) -> None:
     `on_trigger` must be thread-safe (e.g. pushing onto a queue.Queue),
     never touching tkinter directly.
     """
+    if os.name == "nt" or not hasattr(socket, "AF_UNIX"):
+        return
+
     if os.path.exists(SOCK_PATH):
         try:
             os.unlink(SOCK_PATH)
