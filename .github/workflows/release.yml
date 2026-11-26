@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -38,21 +39,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt pyinstaller
 
-      - name: Tests
-        run: pytest
-
       - name: Tag mit CURRENT_VERSION vergleichen
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
           python - <<'EOF'
-          import re, os, sys
+          import os, re, sys
+
           src = open("kaomoji_popup/config.py", encoding="utf-8").read()
           m = re.search(r'CURRENT_VERSION\s*=\s*["\']([^"\']+)["\']', src)
           tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
           if not m or m.group(1) != tag:
               sys.exit(f"CURRENT_VERSION ({m.group(1) if m else '?'}) != Tag ({tag})")
           EOF
+
+      - name: Tests
+        run: pytest -v --maxfail=1
 
       - name: Mit PyInstaller bauen
         shell: bash
