@@ -55,10 +55,18 @@ class KaomojiStore:
                 with open(self.path, "r", encoding="utf-8") as f:
                     raw = json.load(f)
             except (json.JSONDecodeError, OSError):
-                messagebox.showwarning(
-                    "Kaomoji Popup",
-                    f"Could not read {self.path.name}. Starting with default list.",
-                )
+                config.logger.warning("Could not read %s, starting with defaults", self.path,
+                                      exc_info=True)
+                try:
+                    messagebox.showwarning(
+                        "Kaomoji Popup",
+                        f"Could not read {self.path.name}. Starting with default list.",
+                    )
+                except Exception:
+                    # The warning is a courtesy: with no display (headless
+                    # run, tests) tkinter raises TclError, and that must
+                    # never take the whole app down. It is logged above.
+                    pass
 
         if raw is None:
             # Fresh install: seed straight from the bundled defaults.
